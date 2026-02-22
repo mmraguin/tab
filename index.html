@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -6,6 +7,7 @@
 <title>tala.</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=DM+Mono:wght@400;500&display=swap">
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=DM+Mono:wght@400;500&display=swap');
 :root {
   --bg:#0b0b0d;--surface:#141416;--surface2:#1e1e22;--surface3:#28282e;
   --border:#2a2a30;--border2:#363640;
@@ -53,9 +55,7 @@ body::after{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;o
 @keyframes pout{0%{width:10px;height:10px;opacity:1}100%{width:40px;height:40px;opacity:0}}
 .pdot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
 .stext{font-size:13px;color:var(--text2);text-align:center;line-height:1.5}
-.etitle{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--danger)}
-.btn-retry{background:var(--danger);color:#fff;border:none;border-radius:10px;padding:10px 24px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer}
-.hero{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:18px 20px;position:relative;overflow:hidden}
+.hero{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:18px 20px;position:relative;overflow:hidden;animation:fadeUp .2s cubic-bezier(.22,1,.36,1)}
 .hglow{position:absolute;top:-60px;left:-40px;width:220px;height:220px;border-radius:50%;pointer-events:none}
 .hglow.pos{background:radial-gradient(circle,rgba(74,222,128,.12) 0%,transparent 70%)}
 .hglow.warn{background:radial-gradient(circle,rgba(200,146,42,.12) 0%,transparent 70%)}
@@ -64,7 +64,15 @@ body::after{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;o
 .hmlbl{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:5px}
 .hamt{font-variant-numeric:tabular-nums;font-size:36px;font-weight:700;letter-spacing:-.025em;line-height:1}
 .hamt.pos{color:var(--income)}.hamt.warn{color:var(--warn)}.hamt.neg{color:var(--expense)}
+.hstats{display:grid;grid-template-columns:1fr 1fr 1fr;border-top:1px solid var(--border);padding-top:12px;margin-top:14px;position:relative;z-index:1}
+.hs{text-align:center;padding:0 4px;border-right:1px solid var(--border)}.hs:last-child{border-right:none}
+.hslbl{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:3px}
+.hsval{font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
+.ic{color:var(--income)}.ec{color:var(--expense)}.nc{color:var(--text2)}
 .ts{font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);text-align:center;padding:4px 0 8px}
+.etitle{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--danger);margin-bottom:8px}
+.emsg{font-size:13px;color:var(--text2);margin-bottom:14px}
+.btn-retry{background:var(--danger);color:#fff;border:none;border-radius:10px;padding:10px 24px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer}
 @keyframes fadeUp{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
 </style>
 </head>
@@ -74,16 +82,16 @@ body::after{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;o
     <div class="wordmark">tala<em>.</em></div>
     <div class="hdr-r">
       <div class="mnav">
-        <button class="marrow" onclick="changeMonth(-1)">‹</button>
+        <button class="marrow" onclick="changeMonth(-1)">&#8249;</button>
         <div class="mlabel" id="mlabel">---</div>
-        <button class="marrow" onclick="changeMonth(1)">›</button>
+        <button class="marrow" onclick="changeMonth(1)">&#8250;</button>
       </div>
-      <div class="hbtn" id="refbtn" onclick="loadData()">↻</div>
+      <div class="hbtn" id="refbtn" onclick="loadData()">&#8635;</div>
     </div>
   </div>
   <div class="pw" id="pw">
     <div class="pages" id="pages">
-      <div class="page" id="p0"><div class="pi" id="hc"><div class="sc"><div class="pr"><div class="pdot"></div></div><div class="stext">Loading...</div></div></div></div>
+      <div class="page" id="p0"><div class="pi" id="hc"><div class="sc"><div class="pr"><div class="pdot"></div></div><div class="stext">Loading your budget...</div></div></div></div>
       <div class="page" id="p1"><div class="pi" id="pc"><div class="sc"><div class="pr"><div class="pdot"></div></div><div class="stext">Loading...</div></div></div></div>
       <div class="page" id="p2"><div class="pi" id="sc2"><div class="sc"><div class="pr"><div class="pdot"></div></div><div class="stext">Loading...</div></div></div></div>
       <div class="page" id="p3"><div class="pi" id="ac"><div class="sc"><div class="pr"><div class="pdot"></div></div><div class="stext">Loading...</div></div></div></div>
@@ -97,7 +105,10 @@ body::after{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;o
       <div class="tlabel">Home</div>
     </div>
     <div class="tab" data-tab="1" onclick="switchTab(1)">
-      <div class="ti"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></div>
+      <div class="ti" style="position:relative">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        <span class="tbadge" id="planbadge" style="display:none">0</span>
+      </div>
       <div class="tlabel">Plan</div>
     </div>
     <div class="tab" data-tab="2" onclick="switchTab(2)">
@@ -122,87 +133,242 @@ body::after{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;o
 var WEBHOOK='https://script.google.com/macros/s/AKfycbxArmvsbhZIthFv1qqy2cEl5pRRZin2-V-RFdpbuOh--1iESw4m1E8NXo3XtaKqpu-nng/exec';
 var ACCOUNTS=['BDO','BPI','Cash','GCash','Maribank','Maya','UnionBank','UnionBank Credit'];
 var MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+var GORDER=['Income','Home','Pets','Health','Quality Of Life','Stellar Rebels','Sinking','Emergency','Goals'];
 
-var viewMonth=new Date();viewMonth.setDate(1);
-var curTab=0,rawB=null,rawA=null,rawS=null,parsed=null,lastUp=null;
+var viewMonth=new Date();
+viewMonth.setDate(1);
+var curTab=0;
+var rawB=null,rawA=null,rawS=null;
+var parsed=null;
+var lastUp=null;
 
-function parseDate(v){if(!v)return null;if(v instanceof Date)return v;var s=String(v).trim();var m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);if(m)return new Date(+m[3],+m[1]-1,+m[2]);return new Date(v)}
-function pn(v){return parseFloat(String(v||'0').replace(/[^0-9.\-]/g,''))||0}
-function peso(n){return '₱'+Math.abs(n).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2})}
-function sh(n){var a=Math.abs(n);if(a>=1e6)return '₱'+(a/1e6).toFixed(1)+'M';if(a>=1e3)return '₱'+(a/1e3).toFixed(1)+'k';return '₱'+a.toFixed(0)}
+function parseDate(v){
+if(v==null||v===undefined)return null;
+if(v instanceof Date)return isNaN(v.getTime())?null:v;
+var s=String(v).trim();
+if(!s||s===’-’||s===’–’)return null;
+var m=s.match(/^(\d{1,2})/(\d{1,2})/(\d{4})$/);
+if(m)return new Date(+m[3],+m[1]-1,+m[2]);
+var m2=s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+if(m2)return new Date(+m2[1],+m2[2]-1,+m2[3]);
+if(/^\d+$/.test(s)){
+var n=parseInt(s,10);
+if(n>40000&&n<60000){
+var e=new Date(Date.UTC(1899,11,30)+n*86400000);
+return new Date(e.getUTCFullYear(),e.getUTCMonth(),e.getUTCDate());
+}
+}
+var d=new Date(v);
+return isNaN(d.getTime())?null:d;
+}
 
-function setML(){document.getElementById('mlabel').textContent=MONTHS[viewMonth.getMonth()].slice(0,3).toUpperCase()+' '+viewMonth.getFullYear()}
-function changeMonth(d){viewMonth=new Date(viewMonth.getFullYear(),viewMonth.getMonth()+d,1);setML();if(rawB){parsed=parseAll();renderCur()}}
-function switchTab(idx){curTab=idx;document.querySelectorAll('.tab').forEach(function(t){t.classList.toggle('active',+t.dataset.tab===idx)});document.getElementById('pages').style.transform='translateX(-'+((idx/6)*100)+'%)';if(parsed)renderCur()}
-function renderCur(){if(curTab===0)renderHome();else if(curTab===1)renderPlan();else if(curTab===2)renderSpend();else if(curTab===3)renderAccounts();else if(curTab===4)renderGoals();else if(curTab===5)renderReports()}
+function pn(v){
+if(typeof v===‘number’)return v;
+return parseFloat(String(v||‘0’).replace(/[^0-9.-]/g,’’))||0;
+}
+
+function peso(n){
+return ‘\u20b1’+Math.abs(n).toLocaleString(‘en-PH’,{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+
+function sh(n){
+var a=Math.abs(n);
+if(a>=1e6)return ‘\u20b1’+(a/1e6).toFixed(1)+‘M’;
+if(a>=1e3)return ‘\u20b1’+(a/1e3).toFixed(1)+‘k’;
+return ‘\u20b1’+a.toFixed(0);
+}
+
+function bHdr(rows){
+if(!rows||!rows.length)return false;
+return!parseDate(String(rows[0][5]||’’));
+}
+
+function aHdr(rows){
+if(!rows||!rows.length)return false;
+return!parseDate(String(rows[0][0]||’’));
+}
+
+function sHdr(rows){
+if(!rows||!rows.length)return false;
+return!parseDate(String(rows[0][0]||’’));
+}
+
+function setML(){
+document.getElementById(‘mlabel’).textContent=MONTHS[viewMonth.getMonth()].slice(0,3).toUpperCase()+’ ’+viewMonth.getFullYear();
+}
+
+function changeMonth(d){
+viewMonth=new Date(viewMonth.getFullYear(),viewMonth.getMonth()+d,1);
+setML();
+if(rawB){
+parsed=parseAll();
+renderCur();
+}
+}
+
+function switchTab(idx){
+curTab=idx;
+document.querySelectorAll(’.tab’).forEach(function(t){
+t.classList.toggle(‘active’,+t.dataset.tab===idx);
+});
+document.getElementById(‘pages’).style.transform=‘translateX(-’+((idx/6)*100)+’%)’;
+if(parsed)renderCur();
+}
+
+function renderCur(){
+if(curTab===0)renderHome();
+else{
+document.getElementById(‘p’+curTab).innerHTML=’<div class="hero"><div class="hi"><div class="hmlbl">Tab ‘+curTab+’</div><div class="hamt pos">Coming soon</div></div></div>’;
+}
+}
 
 function loadData(){
-  var btn=document.getElementById('refbtn');btn.style.opacity='0.35';
-  fetch(WEBHOOK)
-    .then(r=>r.json())
-    .then(j=>{
-      rawB=j.budget;rawA=j.activity;rawS=j.snapshot;
-      lastUp=new Date();parsed=parseAll();renderCur();
-      try{localStorage.setItem('tala_v1',JSON.stringify({b:rawB,a:rawA,s:rawS,ts:lastUp.toISOString()}))}catch(e){}
-    })
-    .catch(e=>showErr(e.message))
-    .finally(()=>{btn.style.opacity=''});
+var btn=document.getElementById(‘refbtn’);
+btn.style.opacity=‘0.35’;
+btn.style.pointerEvents=‘none’;
+
+fetch(WEBHOOK)
+.then(function(r){
+if(!r.ok)throw new Error(’HTTP ’+r.status);
+return r.json();
+})
+.then(function(j){
+console.log(‘Raw response:’,j);
+if(j.status===‘error’)throw new Error(j.message);
+if(!j.budget||!j.activity||!j.snapshot)throw new Error(‘Missing data sheets’);
+
+```
+  rawB=j.budget;
+  rawA=j.activity;
+  rawS=j.snapshot;
+  lastUp=new Date();
+  
+  parsed=parseAll();
+  console.log('Parsed data:',parsed);
+  renderCur();
+  
+  try{
+    localStorage.setItem('tala_v1',JSON.stringify({b:rawB,a:rawA,s:rawS,ts:lastUp.toISOString()}));
+  }catch(e){
+    console.warn('LocalStorage save failed:',e);
+  }
+})
+.catch(function(e){
+  console.error('Load error:',e);
+  showErr(e.message);
+})
+.finally(function(){
+  btn.style.opacity='';
+  btn.style.pointerEvents='';
+});
+```
+
 }
+
 function showErr(msg){
-  var h='<div class="sc"><div class="etitle">Load failed</div><div class="stext">'+msg+'</div><button class="btn-retry" onclick="loadData()">Retry</button></div>';
-  document.getElementById('hc').innerHTML=h;
+var h=’<div class="sc"><div class="etitle">Load failed</div><div class="emsg">’+msg+’</div><button class="btn-retry" onclick="loadData()">Retry</button></div>’;
+[‘hc’,‘pc’,‘sc2’,‘ac’,‘gc’,‘rc’].forEach(function(id){
+var el=document.getElementById(id);
+if(el)el.innerHTML=h;
+});
 }
 
 function parseAll(){
-  var vm=viewMonth.getMonth(),vy=viewMonth.getFullYear();
-  var bData=rawB.slice(1);var aData=rawA.slice(1);var sData=rawS.slice(1);
-  
-  var bRows=bData.filter(r=>{var d=parseDate(r[5]);return d&&d.getMonth()===vm&&d.getFullYear()===vy});
-  
-  var categories=bRows.map(r=>({
-    cat:String(r[7]).trim(),
-    group:String(r[6]).trim(),
-    totalAssigned:pn(r[11]),
-    activity:pn(r[12]),
-    available:pn(r[14])
-  })).filter(c=>c.cat);
-  
-  var rta=0;
-  for(var i=0;i<sData.length;i++){
-    var sd=parseDate(sData[i][0]);
-    if(sd&&sd.getMonth()===vm&&sd.getFullYear()===vy){
-      rta=pn(sData[i][6]);break;
-    }
-  }
-  
-  var monthAct=aData.filter(r=>{var d=parseDate(r[0]);return d&&d.getMonth()===vm&&d.getFullYear()===vy});
-  var expRows=monthAct.filter(r=>String(r[1]).trim()==='Expense');
-  var incRows=monthAct.filter(r=>String(r[1]).trim()==='Income');
-  
-  var totalInc=incRows.reduce((s,r)=>s+Math.abs(pn(r[2])),0);
-  var totalExp=expRows.reduce((s,r)=>s+Math.abs(pn(r[2])),0);
-  var totalAssignedAll=bRows.reduce((s,r)=>s+pn(r[11]),0);
-  
-  return {categories,readyToAssign:rta,totalInc,totalExp,totalAssignedAll};
+var vm=viewMonth.getMonth();
+var vy=viewMonth.getFullYear();
+
+var bData=bHdr(rawB)?rawB.slice(1):rawB;
+var aData=aHdr(rawA)?rawA.slice(1):rawA;
+var sData=sHdr(rawS)?rawS.slice(1):rawS;
+
+var bRows=bData.filter(function(row){
+var d=parseDate(row[5]);
+return d&&d.getMonth()===vm&&d.getFullYear()===vy;
+});
+
+var rta=0,atm=0,inflowExt=0,outflowExt=0,cashStart=0,cashEnd=0;
+for(var i=0;i<sData.length;i++){
+var sr=sData[i];
+var sd=parseDate(sr[0]);
+if(sd&&sd.getMonth()===vm&&sd.getFullYear()===vy){
+cashStart=pn(sr[1]);
+inflowExt=pn(sr[2]);
+atm=pn(sr[3]);
+outflowExt=pn(sr[4]);
+cashEnd=pn(sr[5]);
+rta=pn(sr[6]);
+break;
+}
+}
+
+var monthAct=aData.filter(function(row){
+var d=parseDate(row[0]);
+return d&&d.getMonth()===vm&&d.getFullYear()===vy;
+});
+
+var expRows=monthAct.filter(function(r){
+return String(r[1]).trim()===‘Expense’;
+});
+
+var incRows=monthAct.filter(function(r){
+return String(r[1]).trim()===‘Income’;
+});
+
+var totalInc=incRows.reduce(function(s,r){
+return s+Math.abs(pn(r[2]));
+},0);
+
+var totalExp=expRows.reduce(function(s,r){
+return s+Math.abs(pn(r[2]));
+},0);
+
+var totalAssignedAll=bRows.reduce(function(s,row){
+return s+pn(row[11]);
+},0);
+
+return{
+readyToAssign:rta,
+assignedThisMonth:atm,
+inflowExt:inflowExt,
+outflowExt:outflowExt,
+cashStart:cashStart,
+cashEnd:cashEnd,
+totalInc:totalInc,
+totalExp:totalExp,
+totalAssignedAll:totalAssignedAll,
+categories:bRows.length
+};
 }
 
 function renderHome(){
-  var p=parsed;
-  document.getElementById('hc').innerHTML=
-    '<div class="hero"><div class="hglow pos"></div><div class="hi">'+
-    '<div class="hmlbl">Left to Assign</div>'+
-    '<div class="hamt pos">'+peso(p.readyToAssign)+'</div>'+
-    '</div></div>'+
-    '<div class="ts">Working! Data loaded successfully.</div>';
+var p=parsed;
+var el=document.getElementById(‘hc’);
+
+var hs=p.readyToAssign<0?‘neg’:p.readyToAssign<p.totalInc*0.1?‘warn’:‘pos’;
+
+var html=’<div class="hero"><div class="hglow '+hs+'"></div><div class="hi">’
++’<div class="hmlbl">Left to Assign</div>’
++’<div class="hamt '+hs+'" style="font-size:44px;margin:4px 0">’
++(p.readyToAssign<0?’−’:’’)+peso(Math.abs(p.readyToAssign))
++’</div>’
++’<div style="font-size:12px;color:var(--text2);margin-top:8px;position:relative;z-index:1">’
++‘From ‘+peso(p.totalInc)+’ income this period’
++’</div></div>’
++’<div class="hstats">’
++’<div class="hs"><div class="hslbl">Income</div><div class="hsval ic">’+sh(p.totalInc)+’</div></div>’
++’<div class="hs"><div class="hslbl">Assigned</div><div class="hsval nc">’+sh(p.totalAssignedAll)+’</div></div>’
++’<div class="hs"><div class="hslbl">Spent</div><div class="hsval ec">’+sh(p.totalExp)+’</div></div>’
++’</div></div>’
++’<div class="ts">’+p.categories+’ categories loaded · ’
++(lastUp?lastUp.toLocaleTimeString(‘en-PH’,{hour:‘2-digit’,minute:‘2-digit’}):’’)
++’</div>’;
+
+el.innerHTML=html;
 }
 
-function renderPlan(){document.getElementById('pc').innerHTML='<div class="ts">Plan tab - '+parsed.categories.length+' categories</div>'}
-function renderSpend(){document.getElementById('sc2').innerHTML='<div class="ts">Spend tab ready</div>'}
-function renderAccounts(){document.getElementById('ac').innerHTML='<div class="ts">Accounts tab ready</div>'}
-function renderGoals(){document.getElementById('gc').innerHTML='<div class="ts">Goals tab ready</div>'}
-function renderReports(){document.getElementById('rc').innerHTML='<div class="ts">Reports tab ready</div>'}
-
-setML();loadData();
+setML();
+loadData();
 </script>
+
 </body>
 </html>
