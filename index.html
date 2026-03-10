@@ -156,7 +156,7 @@
 var WEBHOOK = 'https://script.google.com/macros/s/AKfycbxy2zzSSdVP4zoLO8em6hUkAnNran5lq2_U1QIbMgVRutHuVeE_KBRzkRiEbc9X7GeMQA/exec';
 
 var ACCOUNTS = [
-  'BDO', 'BPI', 'Cash', 'GCash', 'Maribank', 'Maya', 'UnionBank', 'UnionBank Credit'
+  'BDO', 'BPI', 'Cash', 'GCash', 'Grab Wallet', 'Maribank', 'Maya', 'Shopee Pay', 'UnionBank', 'UnionBank Credit'
 ];
 
 var MONTHS = [
@@ -478,8 +478,7 @@ function parseAll() {
     
     catMap[cat] = {
       group: grp,
-      yearlyGoal: pn(row[8]),       // YearlyGoal (col I) — used in Home tab Goals section
-      monthlyGoal: pn(row[9]),      // MonthlyGoal (col J) — used in Plan tab for Sinking/Emergency/Goals
+      goal: pn(row[9]),  // ✅ MonthlyGoal (col J) — was incorrectly mapped to row[8] YearlyGoal
       assigned: pn(row[10]),
       totalAssigned: pn(row[11]),  // ✅ CORRECT - AssignedThisMonth (includes rollovers)
       activity: pn(row[12]),        // ✅ CORRECT - Activity (negative = spent)
@@ -528,6 +527,10 @@ function parseAll() {
   var incRows = monthAct.filter(function(r) {
     return String(r[1]).trim() === 'Income';
   });
+
+  var reimbRows = monthAct.filter(function(r) {
+    return String(r[1]).trim() === 'Reimbursement';
+  });
   
   var totalInc = incRows.reduce(function(s, r) {
     return s + Math.abs(pn(r[2]));
@@ -536,8 +539,15 @@ function parseAll() {
   var totalExp = expRows.reduce(function(s, r) {
     return s + Math.abs(pn(r[2]));
   }, 0);
+
+  var totalReimb = reimbRows.reduce(function(s, r) {
+    return s + Math.abs(pn(r[2]));
+  }, 0);
+
+  // Net spend = expenses minus reimbursements (money that came back)
+  var netExp = Math.max(totalExp - totalReimb, 0);
   
-  // Transactions per category
+  // Transactions per category — expenses AND reimbursements
   var txnsByCat = {};
   expRows.forEach(function(row) {
     var cat = String(row[5] || '').trim();
@@ -547,6 +557,23 @@ function parseAll() {
       date: parseDate(row[0]),
       type: 'expense',
       amount: pn(row[2]),
+      merchant: String(row[3] || '').trim(),
+      payment: String(row[4] || '').trim(),
+      cat: cat,
+      group: String(row[6] || '').trim(),
+      memo: String(row[7] || '').trim()
+    });
+  });
+
+  // Reimbursements appear in the category they offset
+  reimbRows.forEach(function(row) {
+    var cat = String(row[5] || '').trim();
+    if (!cat) return;
+    if (!txnsByCat[cat]) txnsByCat[cat] = [];
+    txnsByCat[cat].push({
+      date: parseDate(row[0]),
+      type: 'reimbursement',
+      amount: Math.abs(pn(row[2])),  // store as positive — it's money back
       merchant: String(row[3] || '').trim(),
       payment: String(row[4] || '').trim(),
       cat: cat,
@@ -573,8 +600,7 @@ function parseAll() {
     categories.push({
       cat: cat,
       group: d.group,
-      yearlyGoal: d.yearlyGoal,
-      monthlyGoal: d.monthlyGoal,
+      goal: d.goal,
       assigned: d.assigned,
       totalAssigned: ta,
       activity: d.activity,
@@ -642,10 +668,13 @@ function parseAll() {
                String(r[1]).trim() !== 'Balance';
       })
       .map(function(r) {
+        var t = String(r[1]).trim().toLowerCase();
+        var amt = pn(r[2]);
+        if (t === 'reimbursement') amt = Math.abs(amt);
         return {
           date: parseDate(r[0]),
-          type: String(r[1]).trim().toLowerCase(),
-          amount: pn(r[2]),
+          type: t,
+          amount: amt,
           merchant: String(r[3] || '').trim(),
           payment: acc,
           cat: String(r[5] || '').trim(),
@@ -660,10 +689,14 @@ function parseAll() {
   var allTxns = monthAct
     .filter(function(r) { return String(r[1]).trim() !== 'Balance'; })
     .map(function(r) {
+      var t = String(r[1]).trim().toLowerCase();
+      var amt = pn(r[2]);
+      // Reimbursements are money coming back — normalize to positive
+      if (t === 'reimbursement') amt = Math.abs(amt);
       return {
         date: parseDate(r[0]),
-        type: String(r[1]).trim().toLowerCase(),
-        amount: pn(r[2]),
+        type: t,
+        amount: amt,
         merchant: String(r[3] || '').trim(),
         payment: String(r[4] || '').trim(),
         cat: String(r[5] || '').trim(),
@@ -726,6 +759,8 @@ function parseAll() {
     outflowExt: outflowExt,
     totalInc: totalInc,
     totalExp: totalExp,
+    totalReimb: totalReimb,
+    netExp: netExp,
     totalAssignedAll: totalAssignedAll,
     accBals: accBals,
     accountSnap: accountSnap,
@@ -753,6 +788,7 @@ function parseAll() {
       cats: categories.length,
       expCt: expRows.length,
       incCt: incRows.length,
+      reimbCt: reimbRows.length,
       balCt: balRows.length,
       hasAccSnap: Object.keys(accountSnap).length > 0
     }
@@ -774,7 +810,7 @@ function renderHome() {
   
   var moPct = Math.round((dom / dim) * 100);
   var budPct = p.totalAssignedAll > 0 ? 
-    Math.round((p.totalExp / p.totalAssignedAll) * 100) : 0;
+    Math.round((p.netExp / p.totalAssignedAll) * 100) : 0;
   
   var pace = budPct > moPct + 10 ? 'over' : 
              budPct > moPct - 5 ? 'warn' : 'good';
@@ -837,7 +873,7 @@ function renderHome() {
     '<div class="hstats">' +
     '<div class="hs"><div class="hslbl">Income</div><div class="hsval ic">' + sh(p.totalInc) + '</div></div>' +
     '<div class="hs"><div class="hslbl">Assigned</div><div class="hsval nc">' + sh(p.totalAssignedAll) + '</div></div>' +
-    '<div class="hs"><div class="hslbl">Spent</div><div class="hsval ec">' + sh(p.totalExp) + '</div></div>' +
+    '<div class="hs"><div class="hslbl">Spent</div><div class="hsval ec">' + sh(p.netExp) + '</div></div>' +
     '</div></div>';
   
   // Spending Pace
@@ -869,7 +905,7 @@ function renderHome() {
     html += '<div class="goals-scroll">';
     
     goals.forEach(function(g) {
-      var target = g.yearlyGoal || g.totalAssigned;
+      var target = g.goal || g.totalAssigned;
       var funded = g.totalAssigned;
       var gpct = target > 0 ? Math.min(Math.round((funded / target) * 100), 100) : 0;
       var remaining = Math.max(target - funded, 0);
@@ -1031,13 +1067,13 @@ function renderPlan() {
     '</div>' +
     '</div></div><div class="hstats" style="margin-top:12px">' +
     '<div class="hs"><div class="hslbl">Income</div><div class="hsval ic">' + sh(p.totalInc) + '</div></div>' +
-    '<div class="hs"><div class="hslbl">Spent</div><div class="hsval ec">' + sh(p.totalExp) + '</div></div>' +
+    '<div class="hs"><div class="hslbl">Spent</div><div class="hsval ec">' + sh(p.netExp) + '</div></div>' +
     '<div class="hs"><div class="hslbl">Assigned</div><div class="hsval nc">' + sh(p.totalAssignedAll) + '</div></div>' +
     '</div></div>';
   
   // Summary bar
   var sumPct = p.totalAssignedAll > 0 ? 
-    Math.min(Math.round((p.totalExp / p.totalAssignedAll) * 100), 999) : 0;
+    Math.min(Math.round((p.netExp / p.totalAssignedAll) * 100), 999) : 0;
   var sumClr = sumPct > 100 ? 'var(--expense)' : 
                sumPct > 80 ? 'var(--warn)' : 'var(--accent)';
   
@@ -1053,7 +1089,7 @@ function renderPlan() {
     ';transition:width .6s"></div>' +
     '</div><div class="sumbar-sub">' +
     '<span class="sumbar-sublbl">Activity ' + sumPct + '%</span>' +
-    '<span class="sumbar-subval">&#8722;' + peso(p.totalExp) + '</span>' +
+    '<span class="sumbar-subval">&#8722;' + peso(p.netExp) + '</span>' +
     '</div></div>';
   
   // Search
@@ -1123,7 +1159,7 @@ function renderPlan() {
         (c.available < 0 ? '&#8722;' : '') + peso(Math.abs(c.available)) + '</div></div>' +
         ((['Sinking', 'Emergency', 'Goals'].indexOf(c.group) >= 0) ?
           '<div class="dstat"><div class="dslbl">Monthly Goal</div>' +
-          '<div class="dsval n">' + (c.monthlyGoal > 0 ? peso(c.monthlyGoal) : '—') + '</div></div>' :
+          '<div class="dsval n">' + (c.goal > 0 ? peso(c.goal) : '—') + '</div></div>' :
           '<div class="dstat"><div class="dslbl">Rollover</div>' +
           '<div class="dsval ' + (c.rollover > 0 ? 'pos' : 'n') + '">' + peso(c.rollover) + '</div></div>') +
         '</div>' +
@@ -1146,12 +1182,14 @@ function renderPlan() {
         (c.txns.length ?
           '<div class="dettitle">Transactions &middot; ' + c.txns.length + '</div>' +
           c.txns.map(function(t, i) {
+            var isReimb = t.type === 'reimbursement';
             return '<div class="dtxn"><div class="txn-idx">' + (i + 1) + '</div>' +
               '<div class="dtxnl">' +
               '<div class="dtxnname">' + (t.merchant || '--') + '</div>' +
               (t.memo ? '<div class="dtxnmemo">' + t.memo + '</div>' : '') +
-              '<div class="dtxnmeta">' + fd(t.date) + ' &middot; ' + t.payment + '</div>' +
-              '</div><div class="dtxnamt e">&#8722;' + peso(Math.abs(t.amount)) + 
+              '<div class="dtxnmeta">' + fd(t.date) + ' &middot; ' + t.payment + (isReimb ? ' &middot; reimbursement' : '') + '</div>' +
+              '</div><div class="dtxnamt ' + (isReimb ? 'i' : 'e') + '">' +
+              (isReimb ? '+' : '&#8722;') + peso(Math.abs(t.amount)) + 
               '</div></div>';
           }).join('')
           : '<div class="dtxnempty">No transactions this month</div>') +
@@ -1227,7 +1265,7 @@ function renderSpend() {
   
   var catSet = ['All'];
   p.allTxns.filter(function(t) {
-    return t.type === 'expense' && t.cat;
+    return (t.type === 'expense' || t.type === 'reimbursement') && t.cat;
   }).forEach(function(t) {
     if (catSet.indexOf(t.cat) < 0) catSet.push(t.cat);
   });
@@ -1245,11 +1283,18 @@ function renderSpend() {
     });
   }
   
-  var total = txns.filter(function(t) {
+  // Net spend = expenses minus reimbursements for the current filter
+  var grossExp = txns.filter(function(t) {
     return t.type === 'expense';
   }).reduce(function(s, t) {
     return s + Math.abs(t.amount);
   }, 0);
+  var filtReimb = txns.filter(function(t) {
+    return t.type === 'reimbursement';
+  }).reduce(function(s, t) {
+    return s + Math.abs(t.amount);
+  }, 0);
+  var total = Math.max(grossExp - filtReimb, 0);
   
   var html = '<div class="chips">';
   catSet.slice(0, 14).forEach(function(c) {
@@ -1261,7 +1306,10 @@ function renderSpend() {
   html += '<div class="hero" style="padding:14px 16px"><div class="hglow neg"></div>' +
     '<div class="hi">' +
     '<div class="hmlbl">' + (spendFilter === 'All' ? 'Total Spent' : spendFilter) + '</div>' +
-    '<div class="hamt neg" style="font-size:26px">' + peso(total) + '</div></div></div>';
+    '<div class="hamt neg" style="font-size:26px">' + peso(total) + '</div>' +
+    (spendFilter === 'All' && p.totalReimb > 0 ? 
+      '<div style="font-size:11px;color:var(--muted);margin-top:2px">' + peso(p.totalReimb) + ' reimbursed</div>' : '') +
+    '</div></div>';
   
   html += buildTGs(txns);
   
@@ -1309,13 +1357,16 @@ function buildTGs(txns) {
       '<div class="tlist">' +
       g.txns.map(function(t, i) {
         var cls = t.type === 'income' ? 'income' : 
+                  t.type === 'reimbursement' ? 'income' :
                   t.type === 'transfer' ? 'transfer' : 'expense';
+        // Reimbursements are positive money-back; expenses are negative outflows
+        var isPositive = t.type === 'income' || t.type === 'reimbursement' || t.amount >= 0;
         return '<div class="trow" style="animation-delay:' + ((gi * 4 + i) * 12) + 'ms">' +
           '<div class="trowl"><div class="trowname">' + (t.merchant || '--') + '</div>' +
           (t.memo ? '<div class="trowmemo">' + t.memo + '</div>' : '') +
-          '<div class="trowcat">' + (t.cat || t.group || '--') + '</div></div>' +
+          '<div class="trowcat">' + (t.type === 'reimbursement' ? '↩ ' : '') + (t.cat || t.group || '--') + '</div></div>' +
           '<div class="trowr"><div class="trowamt ' + cls + '">' +
-          (t.amount < 0 ? '&#8722;' : '+') + peso(Math.abs(t.amount)) + '</div>' +
+          (isPositive ? '+' : '&#8722;') + peso(Math.abs(t.amount)) + '</div>' +
           '<div class="trowvia">' + t.payment + '</div></div></div>';
       }).join('') + '</div></div>';
   }).join('');
@@ -1406,7 +1457,7 @@ function renderAccDet(mode) {
   var bal = snap ? snap.cashEnd : (p.accBals[acc] || 0);
   var all = p.txnsByAcc[acc] || [];
   var txns = flt === 'income' ? 
-    all.filter(function(t) { return t.type === 'income'; }) : 
+    all.filter(function(t) { return t.type === 'income' || t.type === 'reimbursement'; }) : 
     flt === 'expense' ? 
     all.filter(function(t) { return t.type === 'expense'; }) : all;
   
@@ -1645,6 +1696,7 @@ function renderDbg() {
         ['Categories', dbg.cats, 'w0'],
         ['Expense txns', dbg.expCt, 'num'],
         ['Income txns', dbg.incCt, 'num'],
+        ['Reimbursement txns', dbg.reimbCt, 'num'],
         ['Balance rows', dbg.balCt, 'w0']
       ].map(function(c) {
         var cls = c[2] === 'bool' ? (c[1] ? 'ok' : 'bad') : 
@@ -1658,7 +1710,9 @@ function renderDbg() {
       [
         ['Left to Assign', peso(p.readyToAssign), 'Snapshot col G'],
         ['Total Income', peso(p.totalInc), 'Activity Income txns'],
-        ['Total Expense', peso(p.totalExp), 'Activity Expense txns'],
+        ['Gross Expense', peso(p.totalExp), 'Activity Expense txns'],
+        ['Reimbursed', peso(p.totalReimb), 'Activity Reimbursement txns'],
+        ['Net Spend', peso(p.netExp), 'Gross Expense − Reimbursed'],
         ['Total Assigned', peso(p.totalAssignedAll), 'Budget col L (11) sum'],
         ['Net Worth', peso(p.netWorth), 'Latest Balance rows'],
         ['Assigned This Mo', peso(p.assignedThisMonth), 'Snapshot col D']
