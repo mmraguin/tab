@@ -463,28 +463,21 @@ function parseAll() {
     return d && d.getMonth() === vm && d.getFullYear() === vy;
   });
   
-  // ⚠️ CRITICAL BUG: Column mapping is WRONG
-  // Current code uses row[12] as totalAssigned and row[13] as activity
-  // CORRECT mapping should be:
-  //   row[11] = AssignedThisMonth (includes rollovers) → "Budgeted"
-  //   row[12] = Activity (negative = spend) → "Spent"
-  //   row[14] = AvailableThisMonth → "Available" (hero)
-  
   var catMap = {};
   bRows.forEach(function(row) {
     var grp = String(row[6] || '').trim();
     var cat = String(row[7] || '').trim();
     if (!cat || !grp) return;
-    
+
     catMap[cat] = {
-      group: grp,
-      goal: pn(row[9]),  // ✅ MonthlyGoal (col J) — was incorrectly mapped to row[8] YearlyGoal
-      assigned: pn(row[10]),
-      totalAssigned: pn(row[11]),  // ✅ CORRECT - AssignedThisMonth (includes rollovers)
-      activity: pn(row[12]),        // ✅ CORRECT - Activity (negative = spent)
-      rollover: pn(row[13]),        // RolloverPrevMonth
-      available: pn(row[14]),       // AvailableThisMonth (hero)
-      overspent: pn(row[15])
+      group:         grp,
+      goal:          pn(row[9]),   // MonthlyGoal — col J
+      assigned:      pn(row[11]),  // ManualAssigned — col L (no rollovers)
+      totalAssigned: pn(row[12]),  // AssignedThisMonth — col M (includes rollovers)
+      activity:      pn(row[13]),  // Activity — col N (negative = spent)
+      rollover:      pn(row[14]),  // RolloverPrevMonth — col O
+      available:     pn(row[15]),  // AvailableThisMonth — col P (hero)
+      overspent:     pn(row[16])   // NeededThisMonth — col Q
     };
   });
   
@@ -503,7 +496,7 @@ function parseAll() {
       atm = pn(sr[5]);         // AssignedThisMonth — col F
       outflowExt = pn(sr[6]);  // Activity (OutflowExternal) — col G
       cashEnd = pn(sr[7]);     // CashEnd — col H
-      rta = pn(sr[11]);        // ReadyToAssignEnd (hero) — col L
+      rta = pn(sr[9]);         // ReadyToAssignEnd (hero) — col J
       // Find previous month
       if (sMonths[i + 1]) prevCashEnd = pn(sMonths[i + 1].row[7]);
       break;
@@ -711,7 +704,7 @@ function parseAll() {
   });
   
   var totalAssignedAll = bRows.reduce(function(s, row) {
-    return s + pn(row[11]);  // ✅ CORRECT - AssignedThisMonth
+    return s + pn(row[12]);  // AssignedThisMonth — col M
   }, 0);
   
   // Top 5 transactions
@@ -1708,7 +1701,7 @@ function renderDbg() {
       }).join('') +
       '</div><div class="dbgsec"><div class="dbgst">Key Values</div><div class="dbggrid">' +
       [
-        ['Left to Assign', peso(p.readyToAssign), 'Snapshot col L'],
+        ['Left to Assign', peso(p.readyToAssign), 'Snapshot col J'],
         ['Total Income', peso(p.totalInc), 'Activity Income txns'],
         ['Gross Expense', peso(p.totalExp), 'Activity Expense txns'],
         ['Reimbursed', peso(p.totalReimb), 'Activity Reimbursement txns'],
@@ -1739,12 +1732,13 @@ function renderDbg() {
         ['5 (F)', 'MonthStart (date filter)'],
         ['6 (G)', 'Group'],
         ['7 (H)', 'Category'],
-        ['8 (I)', 'Monthly Goal'],
-        ['10 (K)', 'Assigned (manual)'],
-        ['11 (L)', 'AssignedThisMonth / Budgeted (incl. rollovers) ✅'],
-        ['12 (M)', 'Activity (negative = spent) ✅'],
-        ['14 (O)', 'AvailableThisMonth (hero)'],
-        ['15 (P)', 'Overspent']
+        ['9 (J)', 'Monthly Goal'],
+        ['11 (L)', 'ManualAssigned (no rollovers)'],
+        ['12 (M)', 'AssignedThisMonth / Budgeted (incl. rollovers)'],
+        ['13 (N)', 'Activity (negative = spent)'],
+        ['14 (O)', 'RolloverPrevMonth'],
+        ['15 (P)', 'AvailableThisMonth (hero)'],
+        ['16 (Q)', 'NeededThisMonth']
       ].map(function(x) {
         return '<div class="dbgrow"><span class="dbgk">Col ' + x[0] + '</span>' +
           '<span class="dbgv">' + x[1] + '</span></div>';
@@ -1759,10 +1753,10 @@ function renderDbg() {
             '<span class="dbgv" style="font-size:9px;text-align:left">' +
             'MonthStart(5): ' + String(row[5] || '--') + ' &rarr; ' + 
             (pd ? pd.toLocaleDateString() : 'FAIL') + '<br>' +
-            'TotalAssigned(11): ' + String(row[11] || 0) + ' Activity(12): ' + String(row[12] || 0) + '<br>' +
-            'Available(14): ' + String(row[14] || 0) + '</span></div>';
+            'TotalAssigned(12): ' + String(row[12] || 0) + ' Activity(13): ' + String(row[13] || 0) + '<br>' +
+            'Available(15): ' + String(row[15] || 0) + '</span></div>';
         }).join('') +
-        '<div class="dbgnote">Col 11 = AssignedThisMonth (Budgeted), Col 12 = Activity (spent)</div>') +
+        '<div class="dbgnote">Col 12 = AssignedThisMonth (Budgeted), Col 13 = Activity (spent)</div>') +
       '</div>';
       
   } else if (dbgTab === 2) {
@@ -1809,7 +1803,7 @@ function renderDbg() {
         ['5 (F)', 'AssignedThisMonth'],
         ['6 (G)', 'Activity (OutflowExternal)'],
         ['7 (H)', 'CashEnd'],
-        ['11 (L)', 'ReadyToAssignEnd (hero value)']
+        ['9 (J)', 'ReadyToAssignEnd (hero value)']
       ].map(function(x) {
         return '<div class="dbgrow"><span class="dbgk">Col ' + x[0] + '</span>' +
           '<span class="dbgv">' + x[1] + '</span></div>';
@@ -1825,10 +1819,10 @@ function renderDbg() {
             '<span class="dbgk">' + String(row[0] || '?') + (cur ? ' (current)' : '') + '</span>' +
             '<span class="dbgv" style="font-size:9px;text-align:left">' +
             'Parsed: ' + (dt ? dt.toLocaleDateString() : 'FAIL') + 
-            ' | RTA(L): <strong style="color:var(--warn)">' + String(row[11] || '--') +
+            ' | RTA(J): <strong style="color:var(--warn)">' + String(row[9] || '--') +
             '</strong></span></div>';
         }).join('') +
-        '<div class="dbgnote">Col L ReadyToAssignEnd = hero card</div>') +
+        '<div class="dbgnote">Col J ReadyToAssignEnd = hero card</div>') +
       '</div>';
   }
 }
