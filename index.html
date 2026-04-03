@@ -120,13 +120,13 @@
     
     <div class="tab" data-tab="4" onclick="switchTab(4)">
       <div class="ti">
-        <svg viewBox="0 0 24 24">
-          <circle cx="12" cy="12" r="1"/>
-          <circle cx="19" cy="12" r="1"/>
-          <circle cx="5" cy="12" r="1"/>
+        <svg viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="9"/>
+          <circle cx="12" cy="12" r="5"/>
+          <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
         </svg>
       </div>
-      <div class="tlabel">More</div>
+      <div class="tlabel">Goals</div>
     </div>
   </div>
 </div>
@@ -471,6 +471,7 @@ function parseAll() {
 
     catMap[cat] = {
       group:         grp,
+      yearlyGoal:    pn(row[8]),   // YearlyGoal — col I
       goal:          pn(row[9]),   // MonthlyGoal — col J
       assigned:      pn(row[11]),  // ManualAssigned — col L (no rollovers)
       totalAssigned: pn(row[12]),  // AssignedThisMonth — col M (includes rollovers)
@@ -593,6 +594,7 @@ function parseAll() {
     categories.push({
       cat: cat,
       group: d.group,
+      yearlyGoal: d.yearlyGoal,
       goal: d.goal,
       assigned: d.assigned,
       totalAssigned: ta,
@@ -1504,143 +1506,63 @@ function closeAccDet() {
 function renderMore() {
   var p = parsed;
   var el = document.getElementById('mc');
-  var sinking = p.categories.filter(function(c) {
-    return c.group === 'Sinking';
-  });
-  var goals = p.categories.filter(function(c) {
-    return c.group === 'Goals';
-  });
-  
+  var sinking   = p.categories.filter(function(c) { return c.group === 'Sinking'; });
+  var emergency = p.categories.filter(function(c) { return c.group === 'Emergency'; });
+  var goals     = p.categories.filter(function(c) { return c.group === 'Goals'; });
+
+  function goalRow(c, displayName) {
+    var target = c.yearlyGoal > 0 ? c.yearlyGoal : c.goal * 12;
+    var pct    = target > 0 ? Math.min((c.available / target) * 100, 100) : 0;
+    var pctRnd = Math.round(Math.max(0, pct));
+    var funded = pct >= 100;
+    var moLine = c.goal > 0 ? ' &middot; ' + peso(c.goal) + '/mo' : '';
+    var amtCls = c.available < 0 ? 'neg' : funded ? 'pos' : 'n';
+    return '<div class="mrow" style="flex-direction:column;align-items:stretch;gap:6px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:baseline">' +
+      '<div class="mrowname">' + esc(displayName) + '</div>' +
+      '<div class="mamount ' + amtCls + '" style="font-size:12px">' + pctRnd + '%</div>' +
+      '</div>' +
+      '<div class="gbar" style="width:100%;height:5px">' +
+      '<div class="gfill' + (funded ? ' full' : '') + '" style="width:' + pctRnd + '%"></div>' +
+      '</div>' +
+      '<div class="mrowsub">' + peso(c.available) +
+      (target > 0 ? ' of ' + peso(target) : '') +
+      moLine + '</div>' +
+      '</div>';
+  }
+
   var html = '';
-  
-  // Budget vs Activity
-  html += '<div class="lbl">Budget vs Activity</div><div class="more">';
-  var byGrp2 = {};
-  p.categories.filter(function(c) {
-    return c.group !== 'Income';
-  }).forEach(function(c) {
-    if (!byGrp2[c.group]) byGrp2[c.group] = [];
-    byGrp2[c.group].push(c);
-  });
-  
-  var gkeys = GORDER.filter(function(g) {
-    return byGrp2[g];
-  }).concat(Object.keys(byGrp2).filter(function(g) {
-    return GORDER.indexOf(g) < 0;
-  }));
-  
-  gkeys.forEach(function(gname) {
-    var items = byGrp2[gname];
-    if (!items || !items.length) return;
-    
-    var gTA = items.reduce(function(s, i) { return s + i.totalAssigned; }, 0);
-    var gAct = items.reduce(function(s, i) { return s + i.actAmt; }, 0);
-    
-    html += '<div style="padding:10px 14px 8px;border-bottom:1px solid var(--border)">' +
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px">' +
-      '<span style="font-family:\'Syne\',sans-serif;font-size:12px;font-weight:700;' +
-      'color:var(--text2)">' + gname + '</span>' +
-      '<span style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--muted)">' +
-      sh(gAct) + ' / ' + sh(gTA) + '</span></div>';
-    
-    items.forEach(function(c) {
-      html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">' +
-        '<div style="font-size:12px;flex:1;min-width:0;white-space:nowrap;' +
-        'overflow:hidden;text-overflow:ellipsis">' + c.cat + '</div>' +
-        '<div style="flex-shrink:0;width:80px;height:4px;background:var(--surface3);' +
-        'border-radius:2px;overflow:hidden;position:relative">' +
-        '<div style="position:absolute;top:0;left:0;height:100%;width:100%;' +
-        'background:rgba(42,157,159,.18);border-radius:2px"></div>' +
-        '<div style="position:absolute;top:0;left:0;height:100%;width:' + 
-        Math.round(c.pct) + '%;border-radius:2px;background:' + 
-        (c.status === 'over' ? 'var(--expense)' : c.status === 'warn' ? 'var(--warn)' : 'var(--accent)') + 
-        '"></div>' +
-        '</div>' +
-        '<div style="font-family:\'DM Mono\',monospace;font-size:10px;width:50px;' +
-        'text-align:right;font-variant-numeric:tabular-nums;color:' + 
-        (c.available < 0 ? 'var(--expense)' : c.available === 0 ? 'var(--muted)' : 'var(--income)') + '">' +
-        (c.available < 0 ? '&#8722;' : '') + sh(Math.abs(c.available)) + '</div>' +
-        '</div>';
-    });
-    
-    html += '</div>';
-  });
-  html += '</div>';
-  
-  // Top Spends
-  html += '<div class="lbl">Top Spends</div><div class="more">';
-  if (p.top5.length) {
-    p.top5.forEach(function(t, i) {
-      html += '<div class="t5r"><div class="t5rank">' + (i + 1) + '</div>' +
-        '<div class="t5l">' +
-        '<div class="t5n">' + (t.merchant || '--') + '</div>' +
-        '<div class="t5c">' + (t.memo || t.cat) + '</div></div>' +
-        '<div class="t5a">&#8722;' + peso(t.amount) + '</div></div>';
-    });
-  } else {
-    html += '<div style="padding:20px;text-align:center;font-size:12px;color:var(--muted)">' +
-      'No transactions</div>';
-  }
-  html += '</div>';
-  
-  // By Merchant
-  html += '<div class="lbl">By Merchant</div><div class="more">';
-  if (p.merch.length) {
-    p.merch.forEach(function(m) {
-      html += '<div class="mr2"><div class="mr2n">' + m.name + '</div>' +
-        '<div class="mr2r">' +
-        '<div class="mr2a">&#8722;' + peso(m.total) + '</div>' +
-        '<div class="mr2c">' + m.count + ' txn' + (m.count !== 1 ? 's' : '') + '</div>' +
-        '</div></div>';
-    });
-  } else {
-    html += '<div style="padding:20px;text-align:center;font-size:12px;color:var(--muted)">' +
-      'No data</div>';
-  }
-  html += '</div>';
-  
-  // Sinking Funds
+
   if (sinking.length) {
     html += '<div class="lbl">Sinking Funds</div><div class="more">';
-    sinking.forEach(function(c) {
-      var pct = c.totalAssigned > 0 ? 
-        Math.min((c.available / c.totalAssigned) * 100, 100) : 0;
-      html += '<div class="mrow"><div class="mrowl"><div class="mrowname">' + c.cat + '</div>' +
-        '<div class="mrowsub">' + peso(c.available) + ' saved &middot; ' + 
-        peso(c.totalAssigned) + '/mo</div></div>' +
-        '<div class="mrowr"><div class="mamount ' + 
-        (c.available < 0 ? 'neg' : 'pos') + '">' + sh(c.available) + '</div>' +
-        '<div class="gbar"><div class="gfill' + (pct >= 100 ? ' full' : '') + '" ' +
-        'style="width:' + Math.max(0, pct) + '%"></div></div>' +
-        '</div></div>';
+    sinking.forEach(function(c) { html += goalRow(c, c.cat); });
+    html += '</div>';
+  }
+
+  if (emergency.length) {
+    html += '<div class="lbl">Emergency</div><div class="more">';
+    emergency.forEach(function(c) {
+      var name = c.cat.replace(/\s*fund\s*$/i, '').trim() || c.cat;
+      html += goalRow(c, name);
     });
     html += '</div>';
   }
-  
-  // Goals
+
   if (goals.length) {
     html += '<div class="lbl">Goals</div><div class="more">';
-    goals.forEach(function(c) {
-      var pct = c.goal > 0 ? Math.min((c.available / c.goal) * 100, 100) : 0;
-      var left = c.goal > 0 && c.available < c.goal ? 
-        Math.ceil((c.goal - c.available) / (c.goal / 12)) : 0;
-      html += '<div class="mrow"><div class="mrowl"><div class="mrowname">' + c.cat + '</div>' +
-        '<div class="mrowsub">' + peso(c.available) + ' of ' + peso(c.goal) + 
-        (left > 0 ? ' &middot; ~' + left + 'mo' : ' &middot; funded') + '</div></div>' +
-        '<div class="mrowr"><div class="mamount ' + (pct >= 100 ? 'pos' : 'n') + '">' + 
-        Math.round(pct) + '%</div>' +
-        '<div class="gbar"><div class="gfill' + (pct >= 100 ? ' full' : '') + '" ' +
-        'style="width:' + Math.max(0, pct) + '%"></div></div>' +
-        '</div></div>';
-    });
+    goals.forEach(function(c) { html += goalRow(c, c.cat); });
     html += '</div>';
   }
-  
-  html += '<div class="ts">' + 
-    (lastUp ? 'Updated ' + lastUp.toLocaleTimeString('en-PH', { 
-      hour: '2-digit', minute: '2-digit' 
+
+  if (!sinking.length && !emergency.length && !goals.length) {
+    html += '<div style="padding:40px 20px;text-align:center;font-size:13px;color:var(--muted)">No goals data for this month.</div>';
+  }
+
+  html += '<div class="ts">' +
+    (lastUp ? 'Updated ' + lastUp.toLocaleTimeString('en-PH', {
+      hour: '2-digit', minute: '2-digit'
     }) : '') + '</div>';
-  
+
   el.innerHTML = html;
 }
 
