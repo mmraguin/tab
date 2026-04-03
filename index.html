@@ -499,13 +499,13 @@ function parseAll() {
     var sm = sMonths[i];
     if (sm.d.getMonth() === vm && sm.d.getFullYear() === vy) {
       var sr = sm.row;
-      inflowExt = pn(sr[2]);
-      atm = pn(sr[3]);
-      outflowExt = pn(sr[4]);
-      cashEnd = pn(sr[5]);   // CashEnd = total net worth this month
-      rta = pn(sr[6]);       // ReadyToAssignEnd (hero)
+      inflowExt = pn(sr[2]);   // InflowExternal — col C
+      atm = pn(sr[5]);         // AssignedThisMonth — col F
+      outflowExt = pn(sr[6]);  // Activity (OutflowExternal) — col G
+      cashEnd = pn(sr[7]);     // CashEnd — col H
+      rta = pn(sr[11]);        // ReadyToAssignEnd (hero) — col L
       // Find previous month
-      if (sMonths[i + 1]) prevCashEnd = pn(sMonths[i + 1].row[5]);
+      if (sMonths[i + 1]) prevCashEnd = pn(sMonths[i + 1].row[7]);
       break;
     }
   }
@@ -1708,14 +1708,14 @@ function renderDbg() {
       }).join('') +
       '</div><div class="dbgsec"><div class="dbgst">Key Values</div><div class="dbggrid">' +
       [
-        ['Left to Assign', peso(p.readyToAssign), 'Snapshot col G'],
+        ['Left to Assign', peso(p.readyToAssign), 'Snapshot col L'],
         ['Total Income', peso(p.totalInc), 'Activity Income txns'],
         ['Gross Expense', peso(p.totalExp), 'Activity Expense txns'],
         ['Reimbursed', peso(p.totalReimb), 'Activity Reimbursement txns'],
         ['Net Spend', peso(p.netExp), 'Gross Expense − Reimbursed'],
         ['Total Assigned', peso(p.totalAssignedAll), 'Budget col L (11) sum'],
         ['Net Worth', peso(p.netWorth), 'Latest Balance rows'],
-        ['Assigned This Mo', peso(p.assignedThisMonth), 'Snapshot col D']
+        ['Assigned This Mo', peso(p.assignedThisMonth), 'Snapshot col F']
       ].map(function(x) {
         return '<div class="dbgstat"><div class="dbgslbl">' + x[0] + '</div>' +
           '<div class="dbgsval">' + x[1] + '</div>' +
@@ -1805,12 +1805,11 @@ function renderDbg() {
     el.innerHTML = '<div class="dbgsec"><div class="dbgst">Snapshot Column Map</div>' +
       [
         ['0 (A)', 'MonthStart'],
-        ['1 (B)', 'CashStart'],
         ['2 (C)', 'InflowExternal'],
-        ['3 (D)', 'AssignedThisMonth'],
-        ['4 (E)', 'OutflowExternal'],
-        ['5 (F)', 'CashEnd'],
-        ['6 (G)', 'ReadyToAssignEnd (hero value)']
+        ['5 (F)', 'AssignedThisMonth'],
+        ['6 (G)', 'Activity (OutflowExternal)'],
+        ['7 (H)', 'CashEnd'],
+        ['11 (L)', 'ReadyToAssignEnd (hero value)']
       ].map(function(x) {
         return '<div class="dbgrow"><span class="dbgk">Col ' + x[0] + '</span>' +
           '<span class="dbgv">' + x[1] + '</span></div>';
@@ -1826,10 +1825,10 @@ function renderDbg() {
             '<span class="dbgk">' + String(row[0] || '?') + (cur ? ' (current)' : '') + '</span>' +
             '<span class="dbgv" style="font-size:9px;text-align:left">' +
             'Parsed: ' + (dt ? dt.toLocaleDateString() : 'FAIL') + 
-            ' | RTA(G): <strong style="color:var(--warn)">' + String(row[6] || '--') + 
+            ' | RTA(L): <strong style="color:var(--warn)">' + String(row[11] || '--') +
             '</strong></span></div>';
         }).join('') +
-        '<div class="dbgnote">Col G ReadyToAssignEnd = hero card</div>') +
+        '<div class="dbgnote">Col L ReadyToAssignEnd = hero card</div>') +
       '</div>';
   }
 }
