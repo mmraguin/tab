@@ -182,7 +182,7 @@ Account names must exactly match values in Activity sheet (col E) and AccountSna
 | 3 | Accounts | Live — net worth, per-account balances, account detail view |
 | 4 | More | Live — Goals and Reports (simplified form) |
 
-Planned: dedicated Goals tab (tab 4), dedicated Reports tab (tab 5), Home health sentence.
+Planned: dedicated Goals tab (tab 4), dedicated Reports tab (tab 5), Home health sentence. See `ROADMAP.md`.
 
 ---
 
