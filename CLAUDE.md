@@ -68,7 +68,8 @@ All indices are 0-based from col A. Apps Script exports from A1.
 | 5 | F | MonthStart | Date filter — UTC ISO timestamp |
 | 6 | G | Group | Category group |
 | 7 | H | Category | Budget category name |
-| 9 | J | MonthlyGoal | Stored as `goal` — shown in Plan detail panel for Sinking/Emergency/Goals |
+| 8 | I | YearlyGoal | Stored as `yearlyGoal` — annual savings target for Goals tab progress bars |
+| 9 | J | MonthlyGoal | Stored as `goal` — monthly contribution target; denominator fallback (`goal * 12`) when `yearlyGoal = 0` |
 | 10 | K | FutureBudgeted | Checkbox — ignored |
 | 11 | L | ManualAssigned | Stored as `assigned` — what was manually put in this month (no rollovers) |
 | 12 | M | AssignedThisMonth | Stored as `totalAssigned` — includes rollovers — **progress bar denominator** |
@@ -80,6 +81,7 @@ All indices are 0-based from col A. Apps Script exports from A1.
 ```javascript
 catMap[cat] = {
   group:         grp,
+  yearlyGoal:    pn(row[8]),   // YearlyGoal — col I
   goal:          pn(row[9]),   // MonthlyGoal — col J
   assigned:      pn(row[11]),  // ManualAssigned — col L (no rollovers)
   totalAssigned: pn(row[12]),  // AssignedThisMonth — col M (includes rollovers)
@@ -180,9 +182,9 @@ Account names must exactly match values in Activity sheet (col E) and AccountSna
 | 1 | Plan | Live — all category groups, detail panels, search |
 | 2 | Spend | Live — transactions, date grouping, category filter |
 | 3 | Accounts | Live — net worth, per-account balances, account detail view |
-| 4 | More | Live — Goals and Reports (simplified form) |
+| 4 | Goals | Live — Sinking Funds, Emergency, Goals with full-width progress bars and yearly target |
 
-Planned: dedicated Goals tab (tab 4), dedicated Reports tab (tab 5), Home health sentence. See `ROADMAP.md`.
+Planned: dedicated Reports tab (tab 5), 6-tab layout. See `ROADMAP.md`.
 
 ---
 

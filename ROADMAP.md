@@ -39,34 +39,16 @@ Per-account activity line shown only when AccountSnapshot data is available for 
 
 ---
 
-### Tab 4 — Dedicated Goals Tab
-
-Replace the current Goals section in the More tab with a full dedicated tab. Three sections:
-
-1. **Sinking Funds** — budgeted savings for irregular expenses
-2. **Emergency** — emergency fund categories (strip "Fund" suffix from display names)
-3. **Goals** — longer-term savings targets
-
-Each item is a full-width progress row:
-- Category name
-- % funded
-- Progress bar
-- Saved / goal amount
-- Monthly contribution
-
-Uses `goal` (MonthlyGoal, Budget col J) as the monthly contribution target. Uses `yearlyGoal` (Budget col I, currently unparsed) as the annual savings target for progress rings.
-
----
-
 ### Tab 5 — Dedicated Reports Tab
 
-Three sections:
+Four sections:
 
 1. **Budget vs Activity** — table of every group/category with a mini bar and numbers
 2. **Spend by Group** — SVG donut chart, tappable slices
 3. **Month-over-Month** — two mini bar charts:
    - Net Worth over last 6 months (from MonthSnapshot col H)
    - Income vs Expense over last 6 months (from MonthSnapshot cols C/G)
+4. **Top Spends** and **By Merchant** — moved here from the old More tab
 
 ---
 
@@ -85,7 +67,7 @@ Tab bar gains a 6th entry. Swipe navigation already handles arbitrary tab counts
 - Plan tab — all groups, category cards, detail panels, search, progress bars
 - Spend tab — transactions, date grouping, category filter chips
 - Accounts tab — net worth, per-account list, account detail view with filter
-- More tab — Goals and Reports in simplified form
+- Goals tab (tab 4) — Sinking Funds, Emergency, Goals; full-width progress bars; `yearlyGoal` (Budget col I) as annual target with `goal × 12` fallback; Emergency strips "Fund" suffix
 - Debug panel — Budget, Activity, Snapshot sub-tabs with raw value verification
 - Swipe navigation, pull-to-refresh, haptic feedback
 - Safe area padding for iPhone notch
