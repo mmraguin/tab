@@ -7,6 +7,7 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<div class="constellation" id="stars"></div>
 <div class="app">
   <div class="hdr">
     <div class="wordmark">tab<em>.</em></div>
@@ -1760,6 +1761,19 @@ if (!loadCache()) {
 } else {
   loadData();
 }
+
+// Star field
+(function() {
+  var c = document.getElementById('stars');
+  for (var i = 0; i < 300; i++) {
+    var s = document.createElement('div');
+    s.className = 'star';
+    s.style.left = (Math.random() * 100) + '%';
+    s.style.top = (Math.random() * 100) + '%';
+    s.style.animationDelay = (Math.random() * 5) + 's';
+    c.appendChild(s);
+  }
+})();
 
 </script>
 </body>
