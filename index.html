@@ -10,13 +10,15 @@
 <div class="constellation" id="stars"></div>
 <div class="app">
   <div class="hdr">
-    <div class="wordmark">tab<em>.</em></div>
-    <div class="hdr-r">
+    <div class="hdr-l">
       <div class="mnav">
         <button class="marrow" onclick="changeMonth(-1)">&#8249;</button>
         <div class="mlabel" id="mlabel">---</div>
         <button class="marrow" onclick="changeMonth(1)">&#8250;</button>
       </div>
+    </div>
+    <div class="wordmark">tab<em>.</em></div>
+    <div class="hdr-r">
       <div class="hbtn" id="dbgbtn" onclick="toggleDbg()">&#128269;</div>
       <div class="hbtn" id="refbtn" onclick="loadData()">&#8635;</div>
     </div>
@@ -862,7 +864,7 @@ function renderHome() {
   html += '<div class="hero"><div class="hglow ' + hs + '"></div>' +
     '<div class="hi" style="position:relative;z-index:1">' +
     '<div class="hmlbl">Left to Assign</div>' +
-    '<div class="hamt ' + hs + '" style="font-size:44px;margin:4px 0">' +
+    '<div class="hamt ' + hs + '" style="margin:4px 0">' +
     (p.readyToAssign < 0 ? '&#8722;' : '') + peso(Math.abs(p.readyToAssign)) + '</div>' +
     '<div class="hero-from">From ' + peso(p.totalInc) + ' income this period</div>' +
     '</div>' +
@@ -1094,7 +1096,6 @@ function renderPlan() {
     'oninput="filterCats(this.value)"></div>';
   
   // Groups
-  var delay = 0;
   oGrps.forEach(function(grp) {
     var items = byGrp[grp];
     if (!items || !items.length) return;
@@ -1119,7 +1120,7 @@ function renderPlan() {
         Math.min(Math.round((c.actAmt / c.totalAssigned) * 100), 100) : 
         (c.actAmt > 0 ? 100 : 0);
       
-      html += '<div class="cat ' + c.status + '" style="animation-delay:' + delay + 'ms" ' +
+      html += '<div class="cat ' + c.status + '" ' +
         'onclick="togDet(\'' + pid + '\')">' +
         '<div class="cattop"><div class="catl"><div class="catname">' + c.cat + '</div>' +
         '<div class="catsub">' + 
@@ -1191,7 +1192,6 @@ function renderPlan() {
           : '<div class="dtxnempty">No transactions this month</div>') +
         '</div></div></div>';
       
-      delay += 16;
     });
     
     html += '</div></div>';
@@ -1299,12 +1299,12 @@ function renderSpend() {
   });
   html += '</div>';
   
-  html += '<div class="hero" style="padding:14px 16px"><div class="hglow neg"></div>' +
+  html += '<div class="hero"><div class="hglow neg"></div>' +
     '<div class="hi">' +
     '<div class="hmlbl">' + (spendFilter === 'All' ? 'Total Spent' : spendFilter) + '</div>' +
-    '<div class="hamt neg" style="font-size:26px">' + peso(total) + '</div>' +
+    '<div class="hamt neg">' + peso(total) + '</div>' +
     (spendFilter === 'All' && p.totalReimb > 0 ? 
-      '<div style="font-size:11px;color:var(--muted);margin-top:2px">' + peso(p.totalReimb) + ' reimbursed</div>' : '') +
+      '<div style="font-size:9px;color:var(--muted);margin-top:2px">' + peso(p.totalReimb) + ' reimbursed</div>' : '') +
     '</div></div>';
   
   html += buildTGs(txns);
@@ -1458,10 +1458,10 @@ function renderAccDet(mode) {
     all.filter(function(t) { return t.type === 'expense'; }) : all;
   
   var header = '<div class="back" onclick="closeAccDet()">' +
-    '<span style="font-size:18px">&#8249;</span>' + acc + '</div>' +
+    '<span style="font-size:16px">&#8249;</span>' + acc + '</div>' +
     '<div class="nw" style="border-radius:14px;padding:14px 16px">' +
     '<div class="nwlbl">Balance</div>' +
-    '<div class="nwamt ' + (bal >= 0 ? 'pos' : 'neg') + '" style="font-size:24px">' +
+    '<div class="nwamt ' + (bal >= 0 ? 'pos' : 'neg') + '" style="font-size:44px">' +
     (bal < 0 ? '&#8722;' : '') + peso(Math.abs(bal)) + '</div>';
   
   if (snap) {
