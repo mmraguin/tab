@@ -160,8 +160,9 @@ body::before {
   font-weight: 400;
   letter-spacing: -0.5px;
   position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 0;
+  right: 0;
+  text-align: center;
 }
 
 .wordmark em {
