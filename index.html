@@ -177,8 +177,8 @@ var MONTHS = [
 ];
 
 var GORDER = [
-  'Income', 'Home', 'Pets', 'Health', 'Quality Of Life',
-  'Stellar Rebels', 'Sinking', 'Emergency', 'Goals'
+  'Balance', 'Income', 'Fixed', 'Essentials', 'Pets', 'Lifestyle',
+  'Sinking', 'Emergency', 'Goals'
 ];
 
 
@@ -943,8 +943,8 @@ function renderHome() {
   
   // Budget preview
   var budCats = p.categories.filter(function(c) {
-    return c.group !== 'Income' && c.group !== 'Goals' && 
-           c.group !== 'Emergency' && c.group !== 'Sinking' && 
+    return c.group !== 'Income' && c.group !== 'Balance' &&
+           c.group !== 'Goals' && c.group !== 'Emergency' && c.group !== 'Sinking' &&
            c.totalAssigned > 0;
   }).sort(function(a, b) {
     return b.actAmt - a.actAmt;

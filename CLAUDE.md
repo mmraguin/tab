@@ -165,8 +165,8 @@ var ACCOUNTS = [
 ];
 
 var GORDER = [
-  'Income', 'Home', 'Pets', 'Health', 'Quality Of Life',
-  'Stellar Rebels', 'Sinking', 'Emergency', 'Goals'
+  'Balance', 'Income', 'Fixed', 'Essentials', 'Pets', 'Lifestyle',
+  'Sinking', 'Emergency', 'Goals'
 ];
 ```
 
