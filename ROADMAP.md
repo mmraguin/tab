@@ -54,9 +54,7 @@ Four sections:
 
 ### 6-Tab Layout
 
-When Goals and Reports become dedicated tabs, the page container scales from 500% width (5 tabs) to 600% (6 tabs). Each page goes from `width: 20%` to `width: 16.666%`.
-
-Tab bar gains a 6th entry. Swipe navigation already handles arbitrary tab counts via `curTab`.
+When Goals and Reports become dedicated tabs, add the new `<div class="page">` and tab bar entry in HTML. The page container width and per-page width are computed dynamically at boot from the actual DOM page count — no CSS constants to update.
 
 ---
 

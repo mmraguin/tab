@@ -65,9 +65,14 @@ All indices are 0-based from col A. Apps Script exports from A1.
 
 | Index | Col | Field | Notes |
 |-------|-----|-------|-------|
+| 0 | A | BudgetRowID | Ignored |
+| 1 | B | GroupKey | Ignored |
+| 2 | C | GroupID | Stored as `grpId` — stable group identifier, used as DOM id prefix |
+| 3 | D | CategoryID | Stored as `catId` — stable category identifier, primary catMap key |
+| 4 | E | GroupSort | Stored as `grpSort` — numeric sort order for groups |
 | 5 | F | MonthStart | Date filter — UTC ISO timestamp |
-| 6 | G | Group | Category group |
-| 7 | H | Category | Budget category name |
+| 6 | G | Group | Category group display name |
+| 7 | H | Category | Budget category display name |
 | 8 | I | YearlyGoal | Stored as `yearlyGoal` — annual savings target for Goals tab progress bars |
 | 9 | J | MonthlyGoal | Stored as `goal` — monthly contribution target; denominator fallback (`goal * 12`) when `yearlyGoal = 0` |
 | 10 | K | FutureBudgeted | Checkbox — ignored |
@@ -79,8 +84,11 @@ All indices are 0-based from col A. Apps Script exports from A1.
 | 16 | Q | NeededThisMonth | Stored as `overspent` |
 
 ```javascript
-catMap[cat] = {
-  group:         grp,
+catMap[catId] = {           // catId = row[3]
+  name:          cat,       // display name — row[7]
+  group:         grp,       // display name — row[6]
+  grpId:         grpId,     // row[2]
+  grpSort:       pn(row[4]),
   yearlyGoal:    pn(row[8]),   // YearlyGoal — col I
   goal:          pn(row[9]),   // MonthlyGoal — col J
   assigned:      pn(row[11]),  // ManualAssigned — col L (no rollovers)
@@ -101,10 +109,12 @@ catMap[cat] = {
 | 2 | C | Amount | Transaction amount |
 | 3 | D | Merchant | Merchant/payee name |
 | 4 | E | Payment Method | Account name — must match ACCOUNTS list |
-| 5 | F | Category | Budget category |
-| 6 | G | Group | Category group |
+| 5 | F | Category | Budget category display name |
+| 6 | G | Group | Category group display name |
 | 7 | H | Memo | Notes |
 | 11 | L | MonthStart | Pre-assigned budget month — present but not used for filtering |
+| 14 | O | CategoryID | **txnsByCat join key** — matches Budget row[3] |
+| 15 | P | GroupID | Matches Budget row[2] |
 
 **Balance rows** (`row[1] === "Balance"`) are account balance snapshots, not transactions. Not month-filtered. Used as fallback for account balances when AccountSnapshot is unavailable.
 
@@ -155,13 +165,15 @@ if (sMonths[i + 1]) prevCashEnd = pn(sMonths[i + 1].row[7]);
 
 **CashEnd** (MonthSnapshot col H, index 7) = total net worth this month. Shown at top of Accounts tab.
 
+**Goal progress** = `available / target` where `target = yearlyGoal > 0 ? yearlyGoal : goal * 12`. Used on both the Goals tab and the Home goals strip. Never use `totalAssigned` as a target fallback — it causes fake 100% completion when goal fields are blank.
+
 ---
 
 ## Constants
 
 ```javascript
 var ACCOUNTS = [
-  'BDO', 'BPI', 'Cash', 'GCash', 'Maribank', 'Maya', 'UnionBank', 'UnionBank Credit'
+  'BDO', 'BPI', 'Cash', 'GCash', 'Grab Wallet', 'Maribank', 'Maya', 'Shopee Pay', 'UnionBank', 'UnionBank Credit'
 ];
 
 var GORDER = [

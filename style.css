@@ -163,6 +163,7 @@ body::before {
   left: 0;
   right: 0;
   text-align: center;
+  pointer-events: none;
 }
 
 .wordmark em {
@@ -255,13 +256,13 @@ body::before {
 
 .pages {
   display: flex;
-  width: 500%; /* 5 tabs */
+  width: 100%; /* overridden at boot by JS based on actual page count */
   height: 100%;
   transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .page {
-  width: 20%; /* 100% / 5 tabs */
+  width: 100%; /* overridden at boot by JS based on actual page count */
   height: 100%;
   overflow-y: auto;
   overflow-x: hidden;

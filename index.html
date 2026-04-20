@@ -197,6 +197,8 @@ var rawAS = null;
 var parsed = null;
 var lastUp = null;
 
+var NUM_PAGES = 0; // set at boot
+
 var dismissed = {};
 var spendFilter = 'All';
 var accDet = null;
@@ -274,8 +276,17 @@ function fd(d) {
   return d.toLocaleDateString('en-PH', { month: 'short', day: 'numeric' });
 }
 
+function fmtTimestamp() {
+  if (!lastUp) return '';
+  return 'Updated ' + lastUp.toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' });
+}
+
+function hesc(s) {
+  return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
 function esc(s) {
-  return s.replace(/'/g, "\\'");
+  return String(s || '').replace(/'/g, "\\'");
 }
 
 function haptic() {
@@ -319,7 +330,7 @@ pw.addEventListener('touchend', function(e) {
   var dy = e.changedTouches[0].clientY - ty0;
   
   if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 48) {
-    if (dx < 0 && curTab < 4) switchTab(curTab + 1);
+    if (dx < 0 && curTab < NUM_PAGES - 1) switchTab(curTab + 1);
     if (dx > 0 && curTab > 0) switchTab(curTab - 1);
   }
   
@@ -347,6 +358,8 @@ function setML() {
 function changeMonth(d) {
   viewMonth = new Date(viewMonth.getFullYear(), viewMonth.getMonth() + d, 1);
   setML();
+  spendFilter = 'All';
+  dismissed = {};
   if (rawB) {
     parsed = parseAll();
     renderCur();
@@ -363,7 +376,7 @@ function switchTab(idx) {
   document.querySelectorAll('.tab').forEach(function(t) {
     t.classList.toggle('active', +t.dataset.tab === idx);
   });
-  document.getElementById('pages').style.transform = 'translateX(-' + (idx * 20) + '%)';
+  document.getElementById('pages').style.transform = 'translateX(-' + (idx * (100 / NUM_PAGES)) + '%)';
   if (parsed) renderCur();
 }
 
@@ -447,10 +460,10 @@ function loadCache() {
 
 function showErr(msg) {
   var h = '<div class="sc"><div class="etitle">Load failed</div>' +
-    '<div class="stext">' + msg + '</div>' +
+    '<div class="stext">' + hesc(msg) + '</div>' +
     '<button class="btn-retry" onclick="loadData()">Retry</button></div>';
-  
-  ['hc', 'pc'].forEach(function(id) {
+
+  ['hc', 'pc', 'sc2', 'ac', 'mc'].forEach(function(id) {
     var el = document.getElementById(id);
     if (el) el.innerHTML = h;
   });
@@ -458,7 +471,7 @@ function showErr(msg) {
 
 
 /* ══════════════════════════════════════════════════════════════════════════
-   DATA PARSING — ⚠️ COLUMN MAPPING IS WRONG, NEEDS FIX
+   DATA PARSING
    ══════════════════════════════════════════════════════════════════════════ */
 
 function parseAll() {
@@ -470,19 +483,37 @@ function parseAll() {
   var sData = sHdr(rawS) ? rawS.slice(1) : rawS;
   
   // Budget rows for this month — filter by col 5 (MonthStart date)
+  var bNoDate = 0, bMonthMismatch = 0;
   var bRows = bData.filter(function(row) {
     var d = parseDate(row[5]);
-    return d && d.getMonth() === vm && d.getFullYear() === vy;
+    if (!d) { bNoDate++; return false; }
+    if (d.getMonth() !== vm || d.getFullYear() !== vy) { bMonthMismatch++; return false; }
+    return true;
   });
-  
+
   var catMap = {};
-  bRows.forEach(function(row) {
+  var bDrops = { noCat: 0, noGrp: 0, noCatId: 0, ok: 0 };
+  var bDroppedRows = [];
+  bRows.forEach(function(row, i) {
     var grp = String(row[6] || '').trim();
     var cat = String(row[7] || '').trim();
-    if (!cat || !grp) return;
+    var catId = String(row[3] || '').trim();
+    var grpId = String(row[2] || '').trim();
+    if (!cat)   { bDrops.noCat++;   bDroppedRows.push([row, 'no Category (col H)']);   return; }
+    if (!grp)   { bDrops.noGrp++;   bDroppedRows.push([row, 'no Group (col G)']);       return; }
+    if (!catId) {
+      bDrops.noCatId++;
+      bDroppedRows.push([row, 'no CategoryID (col D)']);
+      console.warn('[tab] budget row #' + i + ' dropped — missing CategoryID (col D). month=' + viewMonth.toISOString().slice(0,7) + ' cat="' + cat + '" grp="' + grp + '" rawRow=', row);
+      return;
+    }
+    bDrops.ok++;
 
-    catMap[cat] = {
+    catMap[catId] = {
+      name:          cat,
       group:         grp,
+      grpId:         grpId,
+      grpSort:       pn(row[4]),
       yearlyGoal:    pn(row[8]),   // YearlyGoal — col I
       goal:          pn(row[9]),   // MonthlyGoal — col J
       assigned:      pn(row[11]),  // ManualAssigned — col L (no rollovers)
@@ -553,19 +584,19 @@ function parseAll() {
   // Net spend = expenses minus reimbursements (money that came back)
   var netExp = Math.max(totalExp - totalReimb, 0);
   
-  // Transactions per category — expenses AND reimbursements
+  // Transactions per category — expenses AND reimbursements — keyed by CategoryID
   var txnsByCat = {};
   expRows.forEach(function(row) {
-    var cat = String(row[5] || '').trim();
-    if (!cat) return;
-    if (!txnsByCat[cat]) txnsByCat[cat] = [];
-    txnsByCat[cat].push({
+    var catId = String(row[14] || '').trim();  // CategoryID — col O
+    if (!catId) return;
+    if (!txnsByCat[catId]) txnsByCat[catId] = [];
+    txnsByCat[catId].push({
       date: parseDate(row[0]),
       type: 'expense',
       amount: pn(row[2]),
       merchant: String(row[3] || '').trim(),
       payment: String(row[4] || '').trim(),
-      cat: cat,
+      cat: String(row[5] || '').trim(),
       group: String(row[6] || '').trim(),
       memo: String(row[7] || '').trim()
     });
@@ -573,16 +604,16 @@ function parseAll() {
 
   // Reimbursements appear in the category they offset
   reimbRows.forEach(function(row) {
-    var cat = String(row[5] || '').trim();
-    if (!cat) return;
-    if (!txnsByCat[cat]) txnsByCat[cat] = [];
-    txnsByCat[cat].push({
+    var catId = String(row[14] || '').trim();  // CategoryID — col O
+    if (!catId) return;
+    if (!txnsByCat[catId]) txnsByCat[catId] = [];
+    txnsByCat[catId].push({
       date: parseDate(row[0]),
       type: 'reimbursement',
       amount: Math.abs(pn(row[2])),  // store as positive — it's money back
       merchant: String(row[3] || '').trim(),
       payment: String(row[4] || '').trim(),
-      cat: cat,
+      cat: String(row[5] || '').trim(),
       group: String(row[6] || '').trim(),
       memo: String(row[7] || '').trim()
     });
@@ -590,22 +621,25 @@ function parseAll() {
   
   // Build categories
   var categories = [];
-  Object.keys(catMap).forEach(function(cat) {
-    var d = catMap[cat];
+  Object.keys(catMap).forEach(function(catId) {
+    var d = catMap[catId];
     var actAmt = Math.abs(d.activity);
     var ta = d.totalAssigned;
     var pct = ta > 0 ? Math.min((actAmt / ta) * 100, 100) : (actAmt > 0 ? 100 : 0);
-    var status = d.available < 0 ? 'over' : 
-                 pct >= 80 ? 'warn' : 
+    var status = d.available < 0 ? 'over' :
+                 pct >= 80 ? 'warn' :
                  (d.available === 0 && ta === 0) ? 'zero' : 'ok';
-    
-    var txns = (txnsByCat[cat] || []).sort(function(a, b) {
+
+    var txns = (txnsByCat[catId] || []).sort(function(a, b) {
       return b.date - a.date;
     });
-    
+
     categories.push({
-      cat: cat,
+      catId: catId,
+      cat: d.name,
+      grpId: d.grpId,
       group: d.group,
+      grpSort: d.grpSort,
       yearlyGoal: d.yearlyGoal,
       goal: d.goal,
       assigned: d.assigned,
@@ -790,7 +824,15 @@ function parseAll() {
       rawB: rawB.length,
       rawA: rawA.length,
       rawS: rawS.length,
+      bTotal: bData.length,
+      bNoDate: bNoDate,
+      bMonthMismatch: bMonthMismatch,
       bMo: bRows.length,
+      bDropNoCat: bDrops.noCat,
+      bDropNoGrp: bDrops.noGrp,
+      bDropNoCatId: bDrops.noCatId,
+      bDropOk: bDrops.ok,
+      bDroppedRows: bDroppedRows,
       aMo: monthAct.length,
       cats: categories.length,
       expCt: expRows.length,
@@ -859,14 +901,14 @@ function renderHome() {
   
   // Overspent alerts
   p.overspent.forEach(function(c) {
-    if (dismissed[c.cat]) return;
-    html += '<div class="alert e" style="gap:10px">' +
+    if (dismissed[c.catId]) return;
+    html += '<div class="alert e" data-catid="' + hesc(c.catId) + '" style="gap:10px">' +
       '<span style="font-size:16px;flex-shrink:0">⚠</span>' +
       '<div class="atxt" style="flex:1">' +
-      '<strong style="color:var(--expense);display:block">' + c.cat + ' is overspent</strong>' +
+      '<strong style="color:var(--expense);display:block">' + hesc(c.cat) + ' is overspent</strong>' +
       '<span style="font-size:12px">&#8369;0 left &mdash; over by ' + peso(Math.abs(c.available)) + ' this period</span>' +
       '</div>' +
-      '<button class="ax" onclick="dismiss(\'' + esc(c.cat) + '\')">&#215;</button></div>';
+      '<button class="ax" onclick="dismiss(\'' + esc(c.catId) + '\')">&#215;</button></div>';
   });
   
   // Left to Assign hero
@@ -912,10 +954,10 @@ function renderHome() {
     html += '<div class="goals-scroll">';
     
     goals.forEach(function(g) {
-      var target = g.goal || g.totalAssigned;
-      var funded = g.totalAssigned;
+      var target = g.yearlyGoal > 0 ? g.yearlyGoal : (g.goal > 0 ? g.goal * 12 : 0);
+      var funded = Math.max(g.available, 0);
       var gpct = target > 0 ? Math.min(Math.round((funded / target) * 100), 100) : 0;
-      var remaining = Math.max(target - funded, 0);
+      var remaining = target > 0 ? Math.max(target - funded, 0) : 0;
       var gclr = gpct >= 100 ? 'var(--income)' : gpct >= 60 ? 'var(--accent)' : 'var(--warn)';
       
       var r = 22;
@@ -932,7 +974,7 @@ function renderHome() {
         '</svg>' +
         '<div class="gcard-num" style="color:' + gclr + '">' + gpct + '%</div>' +
         '</div>' +
-        '<div class="gcard-name">' + g.cat + '</div>' +
+        '<div class="gcard-name">' + hesc(g.cat) + '</div>' +
         '<div class="gcard-sub">To go</div>' +
         '<div class="gcard-val" style="color:' + gclr + '">' + peso(remaining) + '</div>' +
         '</div>';
@@ -965,7 +1007,7 @@ function renderHome() {
       
       html += '<div class="hbudrow" onclick="switchTab(1)">' +
         '<div class="hbudl">' +
-        '<div class="hbudname">' + c.cat + '</div>' +
+        '<div class="hbudname">' + hesc(c.cat) + '</div>' +
         '<div class="hbudbar"><div class="hbudfill ' + bc + '" style="width:' + spentPct + '%"></div></div>' +
         '</div>' +
         '<div class="hbudr">' +
@@ -988,18 +1030,18 @@ function renderHome() {
     html += '<div class="tlist">';
     
     recent.forEach(function(t) {
-      var cls = t.type === 'income' ? 'income' : 
+      var cls = t.type === 'income' || t.type === 'reimbursement' ? 'income' :
                 t.type === 'transfer' ? 'transfer' : 'expense';
-      
+
       html += '<div class="trow" onclick="switchTab(2)">' +
         '<div class="trowl">' +
-        '<div class="trowname">' + (t.merchant || '--') + '</div>' +
-        (t.memo ? '<div class="trowmemo">' + t.memo + '</div>' : '') +
-        '<div class="trowcat">' + (t.cat || t.group || t.type) + ' &middot; ' + 
-        t.payment + ' &middot; ' + fd(t.date) + '</div>' +
+        '<div class="trowname">' + hesc(t.merchant || '--') + '</div>' +
+        (t.memo ? '<div class="trowmemo">' + hesc(t.memo) + '</div>' : '') +
+        '<div class="trowcat">' + hesc(t.cat || t.group || t.type) + ' &middot; ' +
+        hesc(t.payment) + ' &middot; ' + fd(t.date) + '</div>' +
         '</div>' +
         '<div class="trowr">' +
-        '<div class="trowamt ' + cls + '">' + 
+        '<div class="trowamt ' + cls + '">' +
         (t.amount < 0 ? '&#8722;' : '+') + peso(Math.abs(t.amount)) + '</div>' +
         '</div>' +
         '</div>';
@@ -1008,10 +1050,7 @@ function renderHome() {
     html += '</div>';
   }
   
-  html += '<div class="ts">' + 
-    (lastUp ? 'Updated ' + lastUp.toLocaleTimeString('en-PH', { 
-      hour: '2-digit', minute: '2-digit' 
-    }) : '') + '</div>';
+  html += '<div class="ts">' + fmtTimestamp() + '</div>';
   
   el.innerHTML = html;
 }
@@ -1056,11 +1095,11 @@ function renderPlan() {
   
   // Overspent alerts
   p.overspent.forEach(function(c) {
-    if (dismissed[c.cat]) return;
-    html += '<div class="alert e"><div class="atxt">' +
-      '<strong>' + c.cat + ' overspent</strong>' +
+    if (dismissed[c.catId]) return;
+    html += '<div class="alert e" data-catid="' + hesc(c.catId) + '"><div class="atxt">' +
+      '<strong>' + hesc(c.cat) + ' overspent</strong>' +
       '<span>' + peso(Math.abs(c.available)) + ' over</span></div>' +
-      '<button class="ax" onclick="dismiss(\'' + esc(c.cat) + '\')">&#215;</button></div>';
+      '<button class="ax" onclick="dismiss(\'' + esc(c.catId) + '\')">&#215;</button></div>';
   });
   
   // Left to Assign hero
@@ -1111,17 +1150,17 @@ function renderPlan() {
     
     var gAv = items.reduce(function(s, i) { return s + i.available; }, 0);
     var gCls = gAv < 0 ? 'neg' : gAv > 0 ? 'pos' : 'zero';
-    var gid = 'g_' + grp.replace(/\W+/g, '_');
+    var gid = 'g_' + items[0].grpId;
     
     html += '<div class="grp"><div class="grphdr" onclick="togGrp(\'' + gid + '\')">' +
-      '<div class="grptitle"><span class="grptog" id="gt_' + gid + '">&#9662;</span>' + 
-      grp + '</div>' +
+      '<div class="grptitle"><span class="grptog" id="gt_' + gid + '">&#9662;</span>' +
+      hesc(grp) + '</div>' +
       '<div class="grpav ' + gCls + '">' + 
       (gAv < 0 ? '&#8722;' : '') + sh(Math.abs(gAv)) + '</div></div>' +
       '<div class="grpcats" id="gc_' + gid + '">';
     
     items.forEach(function(c) {
-      var pid = 'dp_' + c.cat.replace(/\W+/g, '_');
+      var pid = 'dp_' + c.catId;
       var bCls = c.status === 'over' ? 'over' : 
                  c.status === 'warn' ? 'warn' : 'ok';
       
@@ -1131,7 +1170,7 @@ function renderPlan() {
       
       html += '<div class="cat ' + c.status + '" ' +
         'onclick="togDet(\'' + pid + '\')">' +
-        '<div class="cattop"><div class="catl"><div class="catname">' + c.cat + '</div>' +
+        '<div class="cattop"><div class="catl"><div class="catname">' + hesc(c.cat) + '</div>' +
         '<div class="catsub">' + 
         (c.totalAssigned > 0 ? peso(c.totalAssigned) + ' budgeted' : 'no budget') +
         (c.txns.length ? ' &middot; ' + c.txns.length + ' txn' + 
@@ -1191,9 +1230,9 @@ function renderPlan() {
             var isReimb = t.type === 'reimbursement';
             return '<div class="dtxn"><div class="txn-idx">' + (i + 1) + '</div>' +
               '<div class="dtxnl">' +
-              '<div class="dtxnname">' + (t.merchant || '--') + '</div>' +
-              (t.memo ? '<div class="dtxnmemo">' + t.memo + '</div>' : '') +
-              '<div class="dtxnmeta">' + fd(t.date) + ' &middot; ' + t.payment + (isReimb ? ' &middot; reimbursement' : '') + '</div>' +
+              '<div class="dtxnname">' + hesc(t.merchant || '--') + '</div>' +
+              (t.memo ? '<div class="dtxnmemo">' + hesc(t.memo) + '</div>' : '') +
+              '<div class="dtxnmeta">' + fd(t.date) + ' &middot; ' + hesc(t.payment) + (isReimb ? ' &middot; reimbursement' : '') + '</div>' +
               '</div><div class="dtxnamt ' + (isReimb ? 'i' : 'e') + '">' +
               (isReimb ? '+' : '&#8722;') + peso(Math.abs(t.amount)) + 
               '</div></div>';
@@ -1206,10 +1245,7 @@ function renderPlan() {
     html += '</div></div>';
   });
   
-  html += '<div class="ts">' + 
-    (lastUp ? 'Updated ' + lastUp.toLocaleTimeString('en-PH', { 
-      hour: '2-digit', minute: '2-digit' 
-    }) : '') + '</div>';
+  html += '<div class="ts">' + fmtTimestamp() + '</div>';
   
   el.innerHTML = html;
 }
@@ -1220,7 +1256,7 @@ function togGrp(id) {
   if (!cats) return;
   
   var c = cats.classList.toggle('coll');
-  cats.style.maxHeight = c ? '' : cats.scrollHeight + 'px';
+  cats.style.maxHeight = c ? '' : '9999px';
   if (tog) tog.classList.toggle('coll', c);
 }
 
@@ -1237,11 +1273,10 @@ function togDet(id) {
   haptic();
 }
 
-function dismiss(cat) {
-  dismissed[cat] = true;
+function dismiss(catId) {
+  dismissed[catId] = true;
   document.querySelectorAll('.alert').forEach(function(el) {
-    var s = el.querySelector('strong');
-    if (s && s.textContent.indexOf(cat) >= 0) el.remove();
+    if (el.dataset.catid === catId) el.remove();
   });
 }
 
@@ -1304,13 +1339,13 @@ function renderSpend() {
   var html = '<div class="chips">';
   catSet.slice(0, 14).forEach(function(c) {
     html += '<div class="chip' + (c === spendFilter ? ' active' : '') + '" ' +
-      'onclick="setSF(\'' + esc(c) + '\')">' + c + '</div>';
+      'onclick="setSF(\'' + esc(c) + '\')">' + hesc(c) + '</div>';
   });
   html += '</div>';
   
   html += '<div class="hero"><div class="hglow neg"></div>' +
     '<div class="hi">' +
-    '<div class="hmlbl">' + (spendFilter === 'All' ? 'Total Spent' : spendFilter) + '</div>' +
+    '<div class="hmlbl">' + (spendFilter === 'All' ? 'Total Spent' : hesc(spendFilter)) + '</div>' +
     '<div class="hamt neg">' + peso(total) + '</div>' +
     (spendFilter === 'All' && p.totalReimb > 0 ? 
       '<div style="font-size:9px;color:var(--muted);margin-top:2px">' + peso(p.totalReimb) + ' reimbursed</div>' : '') +
@@ -1318,10 +1353,7 @@ function renderSpend() {
   
   html += buildTGs(txns);
   
-  html += '<div class="ts">' + 
-    (lastUp ? 'Updated ' + lastUp.toLocaleTimeString('en-PH', { 
-      hour: '2-digit', minute: '2-digit' 
-    }) : '') + '</div>';
+  html += '<div class="ts">' + fmtTimestamp() + '</div>';
   
   el.innerHTML = html;
 }
@@ -1367,12 +1399,12 @@ function buildTGs(txns) {
         // Reimbursements are positive money-back; expenses are negative outflows
         var isPositive = t.type === 'income' || t.type === 'reimbursement' || t.amount >= 0;
         return '<div class="trow" style="animation-delay:' + ((gi * 4 + i) * 12) + 'ms">' +
-          '<div class="trowl"><div class="trowname">' + (t.merchant || '--') + '</div>' +
-          (t.memo ? '<div class="trowmemo">' + t.memo + '</div>' : '') +
-          '<div class="trowcat">' + (t.type === 'reimbursement' ? '↩ ' : '') + (t.cat || t.group || '--') + '</div></div>' +
+          '<div class="trowl"><div class="trowname">' + hesc(t.merchant || '--') + '</div>' +
+          (t.memo ? '<div class="trowmemo">' + hesc(t.memo) + '</div>' : '') +
+          '<div class="trowcat">' + (t.type === 'reimbursement' ? '↩ ' : '') + hesc(t.cat || t.group || '--') + '</div></div>' +
           '<div class="trowr"><div class="trowamt ' + cls + '">' +
           (isPositive ? '+' : '&#8722;') + peso(Math.abs(t.amount)) + '</div>' +
-          '<div class="trowvia">' + t.payment + '</div></div></div>';
+          '<div class="trowvia">' + hesc(t.payment) + '</div></div></div>';
       }).join('') + '</div></div>';
   }).join('');
 }
@@ -1438,11 +1470,8 @@ function renderAccounts() {
       '<div class="accchev">&#8250;</div></div></div>';
   });
   
-  html += '</div><div class="ts">' + 
-    (lastUp ? 'Updated ' + lastUp.toLocaleTimeString('en-PH', { 
-      hour: '2-digit', minute: '2-digit' 
-    }) : '') + '</div>';
-  
+  html += '</div><div class="ts">' + fmtTimestamp() + '</div>';
+
   el.innerHTML = html;
 }
 
@@ -1492,10 +1521,7 @@ function renderAccDet(mode) {
     '<div class="afc' + (flt === 'expense' ? ' active' : '') + '" ' +
     'onclick="setAF(\'' + acc + '\',\'expense\')">Expenses</div>' +
     '</div>' + buildTGs(txns) +
-    '<div class="ts">' + 
-    (lastUp ? 'Updated ' + lastUp.toLocaleTimeString('en-PH', { 
-      hour: '2-digit', minute: '2-digit' 
-    }) : '') + '</div>';
+    '<div class="ts">' + fmtTimestamp() + '</div>';
 }
 
 function setAF(acc, flt) {
@@ -1529,7 +1555,7 @@ function renderMore() {
     var amtCls = c.available < 0 ? 'neg' : funded ? 'pos' : 'n';
     return '<div class="mrow" style="flex-direction:column;align-items:stretch;gap:6px">' +
       '<div style="display:flex;justify-content:space-between;align-items:baseline">' +
-      '<div class="mrowname">' + esc(displayName) + '</div>' +
+      '<div class="mrowname">' + hesc(displayName) + '</div>' +
       '<div class="mamount ' + amtCls + '" style="font-size:12px">' + pctRnd + '%</div>' +
       '</div>' +
       '<div class="gbar" style="width:100%;height:5px">' +
@@ -1568,10 +1594,7 @@ function renderMore() {
     html += '<div style="padding:40px 20px;text-align:center;font-size:13px;color:var(--muted)">No goals data for this month.</div>';
   }
 
-  html += '<div class="ts">' +
-    (lastUp ? 'Updated ' + lastUp.toLocaleTimeString('en-PH', {
-      hour: '2-digit', minute: '2-digit'
-    }) : '') + '</div>';
+  html += '<div class="ts">' + fmtTimestamp() + '</div>';
 
   el.innerHTML = html;
 }
@@ -1659,8 +1682,38 @@ function renderDbg() {
   } else if (dbgTab === 1) {
     // Budget
     var s = p._bRows.slice(0, 5);
-    el.innerHTML = '<div class="dbgsec"><div class="dbgst">Budget Column Map</div>' +
+    var dropTotal = dbg.bDropNoCat + dbg.bDropNoGrp + dbg.bDropNoCatId;
+    el.innerHTML = '<div class="dbgsec"><div class="dbgst">Budget Row Pipeline</div>' +
       [
+        ['Total rows (excl. header)', dbg.bTotal, 'num'],
+        ['No MonthStart date', dbg.bNoDate, dbg.bNoDate > 0 ? 'bad' : ''],
+        ['Wrong month', dbg.bMonthMismatch, 'num'],
+        ['Matched this month', dbg.bMo, dbg.bMo === 0 ? 'bad' : 'ok'],
+        ['Dropped: no Category (col H)', dbg.bDropNoCat, dbg.bDropNoCat > 0 ? 'bad' : ''],
+        ['Dropped: no Group (col G)', dbg.bDropNoGrp, dbg.bDropNoGrp > 0 ? 'bad' : ''],
+        ['Dropped: no CategoryID (col D)', dbg.bDropNoCatId, dbg.bDropNoCatId > 0 ? 'bad' : ''],
+        ['Built into catMap', dbg.bDropOk, dbg.bDropOk === 0 ? 'bad' : 'ok'],
+        ['Final categories rendered', dbg.cats, dbg.cats === 0 ? 'bad' : 'ok']
+      ].map(function(c) {
+        return '<div class="dbgrow"><span class="dbgk">' + c[0] + '</span>' +
+          '<span class="dbgv ' + (c[2] || '') + '">' + c[1] + '</span></div>';
+      }).join('') +
+      '</div>' +
+      (dbg.bDroppedRows.length ? '<div class="dbgsec"><div class="dbgst" style="color:var(--expense)">Dropped Rows (' + dropTotal + ')</div>' +
+        dbg.bDroppedRows.map(function(pair) {
+          var row = pair[0], reason = pair[1];
+          return '<div class="dbgrow" style="flex-direction:column;gap:2px;align-items:flex-start">' +
+            '<span class="dbgv bad" style="font-size:9px">' + hesc(reason) + '</span>' +
+            '<span class="dbgk" style="font-size:8px">catId=' + hesc(String(row[3] || '(blank)')) +
+            ' grpId=' + hesc(String(row[2] || '(blank)')) +
+            ' cat=' + hesc(String(row[7] || '(blank)')) +
+            ' grp=' + hesc(String(row[6] || '(blank)')) +
+            ' month=' + hesc(String(row[5] || '(blank)')) + '</span></div>';
+        }).join('') +
+        '</div>' : '') +
+      '<div class="dbgsec"><div class="dbgst">Column Map</div>' +
+      [
+        ['3 (D)', 'CategoryID — catMap key, required'],
         ['5 (F)', 'MonthStart (date filter)'],
         ['6 (G)', 'Group'],
         ['7 (H)', 'Category'],
@@ -1676,19 +1729,20 @@ function renderDbg() {
           '<span class="dbgv">' + x[1] + '</span></div>';
       }).join('') +
       '</div><div class="dbgsec"><div class="dbgst">First 5 Budget Rows This Month</div>' +
-      (s.length === 0 ? '<div class="dbgempty">No rows - check MonthStart parsing</div>' :
+      (s.length === 0 ? '<div class="dbgempty">No rows — check MonthStart parsing</div>' :
         s.map(function(row, i) {
           var pd = parseDate(row[5]);
           return '<div class="dbgrow" style="flex-direction:column;gap:3px;align-items:flex-start">' +
-            '<span class="dbgk">Row ' + (i + 1) + ': ' + String(row[7] || '?') + 
-            ' / ' + String(row[6] || '?') + '</span>' +
+            '<span class="dbgk">Row ' + (i + 1) + ': ' + hesc(String(row[7] || '?')) +
+            ' / ' + hesc(String(row[6] || '?')) + '</span>' +
             '<span class="dbgv" style="font-size:9px;text-align:left">' +
-            'MonthStart(5): ' + String(row[5] || '--') + ' &rarr; ' + 
-            (pd ? pd.toLocaleDateString() : 'FAIL') + '<br>' +
+            'CatID(3): ' + hesc(String(row[3] || '(blank)')) + '<br>' +
+            'MonthStart(5): ' + hesc(String(row[5] || '--')) + ' &rarr; ' +
+            (pd ? pd.toLocaleDateString() : '<span style="color:var(--expense)">FAIL</span>') + '<br>' +
             'TotalAssigned(12): ' + String(row[12] || 0) + ' Activity(13): ' + String(row[13] || 0) + '<br>' +
             'Available(15): ' + String(row[15] || 0) + '</span></div>';
         }).join('') +
-        '<div class="dbgnote">Col 12 = AssignedThisMonth (Budgeted), Col 13 = Activity (spent)</div>') +
+        '<div class="dbgnote">Col 3 = CategoryID (required). Col 12 = AssignedThisMonth. Col 13 = Activity (spent).</div>') +
       '</div>';
       
   } else if (dbgTab === 2) {
@@ -1765,6 +1819,14 @@ function renderDbg() {
    ══════════════════════════════════════════════════════════════════════════ */
 
 setML();
+
+// Dynamic tab layout — reads actual page count so adding a page doesn't need JS changes
+NUM_PAGES = document.querySelectorAll('#pages .page').length;
+document.getElementById('pages').style.width = (NUM_PAGES * 100) + '%';
+document.querySelectorAll('#pages .page').forEach(function(p) {
+  p.style.width = (100 / NUM_PAGES) + '%';
+});
+
 if (!loadCache()) {
   loadData();
 } else {
