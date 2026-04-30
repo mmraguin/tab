@@ -100,23 +100,30 @@ catMap[catId] = {           // catId = row[3]
 };
 ```
 
-### Activity Sheet — filter by `row[0]` (Date, col A)
+### Activity Sheet — filter by `row[10]` (BillingCycle, col K)
 
 | Index | Col | Field | Notes |
 |-------|-----|-------|-------|
-| 0 | A | Date | Transaction date — UTC ISO timestamp — **filter by this** |
-| 1 | B | Type | "Income", "Expense", "Transfer", "Balance", "Reimbursement" |
-| 2 | C | Amount | Transaction amount |
-| 3 | D | Merchant | Merchant/payee name |
-| 4 | E | Payment Method | Account name — must match ACCOUNTS list |
-| 5 | F | Category | Budget category display name |
-| 6 | G | Group | Category group display name |
-| 7 | H | Memo | Notes |
-| 11 | L | MonthStart | Pre-assigned budget month — present but not used for filtering |
-| 14 | O | CategoryID | **txnsByCat join key** — matches Budget row[3] |
-| 15 | P | GroupID | Matches Budget row[2] |
+| 0 | A | BudgetRowID | Ignored |
+| 1 | B | TxnID | Ignored |
+| 2 | C | GroupKey | Ignored |
+| 3 | D | BudgetKey | Ignored |
+| 4 | E | CategoryID | **txnsByCat join key** — matches Budget row[3] |
+| 5 | F | GroupID | Matches Budget row[2] |
+| 6 | G | AccountID | Ignored |
+| 7 | H | AccountFilter | Ignored |
+| 8 | I | TransactionMonthStart | Ignored |
+| 9 | J | TransactionDate | Display date — UTC ISO timestamp |
+| 10 | K | BillingCycle | **Period filter** — UTC ISO timestamp (displayed as MMMM in Sheets) |
+| 11 | L | Type | "Income", "Expense", "Transfer", "Balance", "Reimbursement" |
+| 12 | M | Amount | Transaction amount |
+| 13 | N | Merchant | Merchant/payee name |
+| 14 | O | Payment Method | Account name — must match ACCOUNTS list |
+| 15 | P | Category | Budget category display name |
+| 16 | Q | Group | Category group display name |
+| 17 | R | Memo | Notes |
 
-**Balance rows** (`row[1] === "Balance"`) are account balance snapshots, not transactions. Not month-filtered. Used as fallback for account balances when AccountSnapshot is unavailable.
+**Balance rows** (`row[11] === "Balance"`) are account balance snapshots, not transactions. Not month-filtered. Used as fallback for account balances when AccountSnapshot is unavailable.
 
 ### MonthSnapshot Sheet — filter by `row[0]` (MonthStart, col A)
 
