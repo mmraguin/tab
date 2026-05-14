@@ -131,23 +131,28 @@ catMap[catId] = {           // catId = row[3]
 |-------|-----|-------|-------|
 | 0 | A | MonthStart | Date filter — UTC ISO timestamp |
 | 1 | B | CashStart | Opening net worth |
-| 2 | C | InflowExternal | Income received |
-| 3 | D | Income | |
-| 4 | E | Reimbursements | |
-| 5 | F | AssignedThisMonth | Total assigned across all categories |
-| 6 | G | Activity | Total expenses paid |
-| 7 | H | CashEnd | **Total net worth — primary number on Accounts tab** |
+| 2 | C | CashEnd | **Total net worth — primary number on Accounts tab** |
+| 3 | D | AvailableThisMonth | |
+| 4 | E | InflowExternal | Income received |
+| 5 | F | Income | |
+| 6 | G | AdjustedIncome | |
+| 7 | H | Reimbursement | |
 | 8 | I | FutureBudgeted | |
-| 9 | J | ReadyToAssignEnd | **Left to Assign — hero number on Home and Plan tabs** |
-| 10 | K | Expenses | |
+| 9 | J | RolloverPrevMonth | |
+| 10 | K | ManuallyAssigned | |
+| 11 | L | AssignedThisMonth | Total assigned across all categories |
+| 12 | M | Expenses | |
+| 13 | N | TrueExpenses | **Monthly expenses/activity — used as outflow** |
+| 14 | O | ReadyToAssignEnd | **Left to Assign — hero number on Home and Plan tabs** |
+| 15 | P | Activity | |
 
 ```javascript
-inflowExt  = pn(sr[2]);  // InflowExternal — col C
-atm        = pn(sr[5]);  // AssignedThisMonth — col F
-outflowExt = pn(sr[6]);  // Activity — col G
-cashEnd    = pn(sr[7]);  // CashEnd — col H
-rta        = pn(sr[9]);  // ReadyToAssignEnd — col J
-if (sMonths[i + 1]) prevCashEnd = pn(sMonths[i + 1].row[7]);
+cashEnd    = pn(sr[2]);  // CashEnd — col C
+inflowExt  = pn(sr[4]);  // InflowExternal — col E
+atm        = pn(sr[11]); // AssignedThisMonth — col L
+outflowExt = pn(sr[13]); // TrueExpenses — col N
+rta        = pn(sr[14]); // ReadyToAssignEnd — col O
+if (sMonths[i + 1]) prevCashEnd = pn(sMonths[i + 1].row[2]);
 ```
 
 ### AccountSnapshot Sheet — filter by `row[0]` (MonthStart, col A)
