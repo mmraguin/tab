@@ -125,45 +125,40 @@ catMap[catId] = {           // catId = row[3]
 
 **Balance rows** (`row[11] === "Balance"`) are account balance snapshots, not transactions. Not month-filtered. Used as fallback for account balances when AccountSnapshot is unavailable.
 
-### MonthSnapshot Sheet — filter by `row[0]` (MonthStart, col A)
+### MonthSnapshot Sheet — filter by `row[0]` (BudgetMonth, col A)
 
 | Index | Col | Field | Notes |
 |-------|-----|-------|-------|
-| 0 | A | MonthStart | Date filter — UTC ISO timestamp |
+| 0 | A | BudgetMonth | Date filter — UTC ISO timestamp |
 | 1 | B | CashStart | Opening net worth |
-| 2 | C | CashEnd | **Total net worth — primary number on Accounts tab** |
-| 3 | D | AvailableThisMonth | |
-| 4 | E | InflowExternal | Income received |
-| 5 | F | Income | |
-| 6 | G | AdjustedIncome | |
-| 7 | H | Reimbursement | |
-| 8 | I | FutureBudgeted | |
-| 9 | J | RolloverPrevMonth | |
-| 10 | K | ManuallyAssigned | |
-| 11 | L | AssignedThisMonth | Total assigned across all categories |
-| 12 | M | Expenses | |
-| 13 | N | TrueExpenses | **Monthly expenses/activity — used as outflow** |
-| 14 | O | ReadyToAssignEnd | **Left to Assign — hero number on Home and Plan tabs** |
-| 15 | P | Activity | |
+| 2 | C | ExternalInflow | Income received |
+| 3 | D | AdjustedIncome | |
+| 4 | E | TrueExpense | **Monthly expenses/activity — used as outflow** |
+| 5 | F | CashEnd | **Total net worth — primary number on Accounts tab** |
+| 6 | G | TotalAssigned | |
+| 7 | H | AssignedThisMonth | Total assigned across all categories |
+| 8 | I | AvailableToAssign | **Left to Assign — hero number on Home and Plan tabs** |
+| 9 | J | Total Month Money | |
+| 10 | K | Net Change | |
 
 ```javascript
-cashEnd    = pn(sr[2]);  // CashEnd — col C
-inflowExt  = pn(sr[4]);  // InflowExternal — col E
-atm        = pn(sr[11]); // AssignedThisMonth — col L
-outflowExt = pn(sr[13]); // TrueExpenses — col N
-rta        = pn(sr[14]); // ReadyToAssignEnd — col O
-if (sMonths[i + 1]) prevCashEnd = pn(sMonths[i + 1].row[2]);
+inflowExt  = pn(sr[2]);  // ExternalInflow — col C
+outflowExt = pn(sr[4]);  // TrueExpense — col E
+cashEnd    = pn(sr[5]);  // CashEnd — col F
+atm        = pn(sr[7]);  // AssignedThisMonth — col H
+rta        = pn(sr[8]);  // AvailableToAssign — col I
+if (sMonths[i + 1]) prevCashEnd = pn(sMonths[i + 1].row[5]);
 ```
 
-### AccountSnapshot Sheet — filter by `row[0]` (MonthStart, col A)
+### AccountSnapshot Sheet — filter by `row[0]` (BudgetMonth, col A)
 
 | Index | Col | Field | Notes |
 |-------|-----|-------|-------|
-| 0 | A | MonthStart | Date filter — UTC ISO timestamp |
-| 1 | B | Account | Account name — must match ACCOUNTS list |
-| 2 | C | CashStart | Opening balance |
-| 3 | D | Activity | Net flow (Income − Expense) for this account |
-| 4 | E | CashEnd | **Closing balance per account — shown in Accounts tab** |
+| 0 | A | BudgetMonth | Date filter — UTC ISO timestamp |
+| 1 | B | Payment Method | Account name — must match ACCOUNTS list |
+| 2 | C | TrueBalance | Opening balance |
+| 3 | D | NetCashImpact | Net flow for this account |
+| 4 | E | Actual Balance | **Closing balance per account — shown in Accounts tab** |
 
 ---
 

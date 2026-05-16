@@ -536,13 +536,13 @@ function parseAll() {
     var sm = sMonths[i];
     if (sm.d.getMonth() === vm && sm.d.getFullYear() === vy) {
       var sr = sm.row;
-      cashEnd = pn(sr[2]);     // CashEnd — col C
-      inflowExt = pn(sr[4]);   // InflowExternal — col E
-      atm = pn(sr[11]);        // AssignedThisMonth — col L
-      outflowExt = pn(sr[13]); // TrueExpenses — col N
-      rta = pn(sr[14]);        // ReadyToAssignEnd (hero) — col O
+      inflowExt  = pn(sr[2]);  // ExternalInflow — col C
+      outflowExt = pn(sr[4]);  // TrueExpense — col E
+      cashEnd    = pn(sr[5]);  // CashEnd — col F
+      atm        = pn(sr[7]);  // AssignedThisMonth — col H
+      rta        = pn(sr[8]);  // AvailableToAssign (hero) — col I
       // Find previous month
-      if (sMonths[i + 1]) prevCashEnd = pn(sMonths[i + 1].row[2]);
+      if (sMonths[i + 1]) prevCashEnd = pn(sMonths[i + 1].row[5]);
       break;
     }
   }
