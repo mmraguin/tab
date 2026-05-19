@@ -547,38 +547,38 @@ function parseAll() {
     }
   }
   
-  // Activity — filter by col 10 (BillingCycle), display date from col 9 (TransactionDate)
+  // Activity — filter by col 7 (BillingCycle), display date from col 6 (TransactionDate)
   var monthAct = aData.filter(function(row) {
-    var d = parseDate(row[10]);
+    var d = parseDate(row[7]);
     return d && d.getMonth() === vm && d.getFullYear() === vy;
   });
 
   var balRows = aData.filter(function(row) {
-    return String(row[11]).trim() === 'Balance';
+    return String(row[8]).trim() === 'Balance';
   });
 
   var expRows = monthAct.filter(function(r) {
-    return String(r[11]).trim() === 'Expense';
+    return String(r[8]).trim() === 'Expense';
   });
 
   var incRows = monthAct.filter(function(r) {
-    return String(r[11]).trim() === 'Income';
+    return String(r[8]).trim() === 'Income';
   });
 
   var reimbRows = monthAct.filter(function(r) {
-    return String(r[11]).trim() === 'Reimbursement';
+    return String(r[8]).trim() === 'Reimbursement';
   });
 
   var totalInc = incRows.reduce(function(s, r) {
-    return s + Math.abs(pn(r[12]));
+    return s + Math.abs(pn(r[9]));
   }, 0);
 
   var totalExp = expRows.reduce(function(s, r) {
-    return s + Math.abs(pn(r[12]));
+    return s + Math.abs(pn(r[9]));
   }, 0);
 
   var totalReimb = reimbRows.reduce(function(s, r) {
-    return s + Math.abs(pn(r[12]));
+    return s + Math.abs(pn(r[9]));
   }, 0);
 
   // Net spend = expenses minus reimbursements (money that came back)
@@ -591,14 +591,14 @@ function parseAll() {
     if (!catId) return;
     if (!txnsByCat[catId]) txnsByCat[catId] = [];
     txnsByCat[catId].push({
-      date: parseDate(row[9]),
+      date: parseDate(row[6]),
       type: 'expense',
-      amount: pn(row[12]),
-      merchant: String(row[13] || '').trim(),
-      payment: String(row[14] || '').trim(),
-      cat: String(row[15] || '').trim(),
-      group: String(row[16] || '').trim(),
-      memo: String(row[17] || '').trim()
+      amount: pn(row[9]),
+      merchant: String(row[10] || '').trim(),
+      payment: String(row[11] || '').trim(),
+      cat: String(row[12] || '').trim(),
+      group: String(row[13] || '').trim(),
+      memo: String(row[14] || '').trim()
     });
   });
 
@@ -608,14 +608,14 @@ function parseAll() {
     if (!catId) return;
     if (!txnsByCat[catId]) txnsByCat[catId] = [];
     txnsByCat[catId].push({
-      date: parseDate(row[9]),
+      date: parseDate(row[6]),
       type: 'reimbursement',
-      amount: Math.abs(pn(row[12])),  // store as positive — it's money back
-      merchant: String(row[13] || '').trim(),
-      payment: String(row[14] || '').trim(),
-      cat: String(row[15] || '').trim(),
-      group: String(row[16] || '').trim(),
-      memo: String(row[17] || '').trim()
+      amount: Math.abs(pn(row[9])),  // store as positive — it's money back
+      merchant: String(row[10] || '').trim(),
+      payment: String(row[11] || '').trim(),
+      cat: String(row[12] || '').trim(),
+      group: String(row[13] || '').trim(),
+      memo: String(row[14] || '').trim()
     });
   });
   
@@ -689,13 +689,13 @@ function parseAll() {
     } else {
       // Fallback: latest Balance row from Activity
       var rows = balRows
-        .filter(function(r) { return String(r[14] || '').trim() === acc; })
+        .filter(function(r) { return String(r[11] || '').trim() === acc; })
         .sort(function(a, b) {
-          var da = parseDate(a[9]) || new Date(0);
-          var db = parseDate(b[9]) || new Date(0);
+          var da = parseDate(a[6]) || new Date(0);
+          var db = parseDate(b[6]) || new Date(0);
           return db - da;
         });
-      accBals[acc] = rows.length ? pn(rows[0][12]) : 0;
+      accBals[acc] = rows.length ? pn(rows[0][9]) : 0;
     }
   });
   
@@ -705,22 +705,22 @@ function parseAll() {
   ACCOUNTS.forEach(function(acc) {
     txnsByAcc[acc] = monthAct
       .filter(function(r) {
-        return String(r[14] || '').trim() === acc &&
-               String(r[11]).trim() !== 'Balance';
+        return String(r[11] || '').trim() === acc &&
+               String(r[8]).trim() !== 'Balance';
       })
       .map(function(r) {
-        var t = String(r[11]).trim().toLowerCase();
-        var amt = pn(r[12]);
+        var t = String(r[8]).trim().toLowerCase();
+        var amt = pn(r[9]);
         if (t === 'reimbursement') amt = Math.abs(amt);
         return {
-          date: parseDate(r[9]),
+          date: parseDate(r[6]),
           type: t,
           amount: amt,
-          merchant: String(r[13] || '').trim(),
+          merchant: String(r[10] || '').trim(),
           payment: acc,
-          cat: String(r[15] || '').trim(),
-          group: String(r[16] || '').trim(),
-          memo: String(r[17] || '').trim()
+          cat: String(r[12] || '').trim(),
+          group: String(r[13] || '').trim(),
+          memo: String(r[14] || '').trim()
         };
       })
       .sort(function(a, b) { return b.date - a.date; });
@@ -728,21 +728,21 @@ function parseAll() {
   
   // All month transactions (Spending tab)
   var allTxns = monthAct
-    .filter(function(r) { return String(r[11]).trim() !== 'Balance'; })
+    .filter(function(r) { return String(r[8]).trim() !== 'Balance'; })
     .map(function(r) {
-      var t = String(r[11]).trim().toLowerCase();
-      var amt = pn(r[12]);
+      var t = String(r[8]).trim().toLowerCase();
+      var amt = pn(r[9]);
       // Reimbursements are money coming back — normalize to positive
       if (t === 'reimbursement') amt = Math.abs(amt);
       return {
-        date: parseDate(r[9]),
+        date: parseDate(r[6]),
         type: t,
         amount: amt,
-        merchant: String(r[13] || '').trim(),
-        payment: String(r[14] || '').trim(),
-        cat: String(r[15] || '').trim(),
-        group: String(r[16] || '').trim(),
-        memo: String(r[17] || '').trim()
+        merchant: String(r[10] || '').trim(),
+        payment: String(r[11] || '').trim(),
+        cat: String(r[12] || '').trim(),
+        group: String(r[13] || '').trim(),
+        memo: String(r[14] || '').trim()
       };
     })
     .sort(function(a, b) { return b.date - a.date; });
@@ -866,15 +866,17 @@ function renderHome() {
   var pLbl = pace === 'over' ? 'Over pace' : 
              pace === 'warn' ? 'On watch' : 'On track';
   
-  var hs = p.readyToAssign < 0 ? 'neg' : 
-           p.readyToAssign < p.totalInc * 0.1 ? 'warn' : 'pos';
-  
+  var rta = p.readyToAssign;
+  var rtaOverAssigned = rta < -1;
+  var hs = rtaOverAssigned ? 'neg' :
+           rta < p.totalInc * 0.1 ? 'warn' : 'pos';
+
   var html = '';
-  
+
   // Health sentence
   var monthName = MONTHS[viewMonth.getMonth()];
   var healthMsg, healthClass;
-  if (p.readyToAssign < 0) {
+  if (rtaOverAssigned) {
     healthMsg = monthName + ' is over-assigned.';
     healthClass = 'neg';
   } else if (pace === 'over') {
@@ -916,7 +918,7 @@ function renderHome() {
     '<div class="hi" style="position:relative;z-index:1">' +
     '<div class="hmlbl">Left to Assign</div>' +
     '<div class="hamt ' + hs + '" style="margin:4px 0">' +
-    (p.readyToAssign < 0 ? '&#8722;' : '') + peso(Math.abs(p.readyToAssign)) + '</div>' +
+    (rtaOverAssigned ? '&#8722;' : '') + peso(Math.abs(rta)) + '</div>' +
     '<div class="hero-from">From ' + peso(p.totalInc) + ' income this period</div>' +
     '</div>' +
     '<div class="hstats">' +
@@ -1064,7 +1066,8 @@ function renderPlan() {
   var p = parsed;
   var el = document.getElementById('pc');
   var lta = p.readyToAssign;
-  var hs = lta < 0 ? 'neg' : lta < p.totalInc * 0.15 ? 'warn' : 'pos';
+  var ltaOver = lta < -1;
+  var hs = ltaOver ? 'neg' : lta < p.totalInc * 0.15 ? 'warn' : 'pos';
   
   var badge = document.getElementById('planbadge');
   badge.style.display = p.overspent.length ? '' : 'none';
@@ -1106,10 +1109,10 @@ function renderPlan() {
   html += '<div class="hero"><div class="hglow ' + hs + '"></div><div class="hi">' +
     '<div class="hmlbl">Left to Assign</div>' +
     '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
-    '<div class="hamt ' + hs + '">' + 
-    (lta < 0 ? '&#8722;' : '') + peso(Math.abs(lta)) + '</div>' +
-    '<div class="hchip ' + hs + '">' + 
-    (lta < 0 ? 'Over-assigned' : lta < p.totalInc * 0.15 ? 'Low' : 'On track') + 
+    '<div class="hamt ' + hs + '">' +
+    (ltaOver ? '&#8722;' : '') + peso(Math.abs(lta)) + '</div>' +
+    '<div class="hchip ' + hs + '">' +
+    (ltaOver ? 'Over-assigned' : lta < p.totalInc * 0.15 ? 'Low' : 'On track') +
     '</div>' +
     '</div></div><div class="hstats" style="margin-top:12px">' +
     '<div class="hs"><div class="hslbl">Income</div><div class="hsval ic">' + sh(p.totalInc) + '</div></div>' +
@@ -1343,11 +1346,12 @@ function renderSpend() {
   });
   html += '</div>';
   
+  var heroAmt = (spendFilter === 'All' && p.outflowExt) ? p.outflowExt : total;
   html += '<div class="hero"><div class="hglow neg"></div>' +
     '<div class="hi">' +
     '<div class="hmlbl">' + (spendFilter === 'All' ? 'Total Spent' : hesc(spendFilter)) + '</div>' +
-    '<div class="hamt neg">' + peso(total) + '</div>' +
-    (spendFilter === 'All' && p.totalReimb > 0 ? 
+    '<div class="hamt neg">' + peso(heroAmt) + '</div>' +
+    (spendFilter === 'All' && p.totalReimb > 0 ?
       '<div style="font-size:9px;color:var(--muted);margin-top:2px">' + peso(p.totalReimb) + ' reimbursed</div>' : '') +
     '</div></div>';
   
@@ -1670,13 +1674,26 @@ function renderDbg() {
           '<div style="font-size:9px;color:var(--muted);margin-top:1px">' + x[2] + '</div></div>';
       }).join('') +
       '</div></div>' +
-      '<div class="dbgsec"><div class="dbgst">Account Balances</div>' +
+      '<div class="dbgsec"><div class="dbgst">Account Balances (source)</div>' +
       ACCOUNTS.map(function(a) {
-        var b = p.accBals[a];
+        var snap = p.accountSnap[a];
+        var b = snap ? snap.cashEnd : (p.accBals[a] || 0);
+        var src = snap ? 'snapshot' : 'fallback';
         return '<div class="dbgrow"><span class="dbgk">' + a + '</span>' +
           '<span class="dbgv ' + (b > 0 ? 'ok' : b < 0 ? 'bad' : '') + '">' +
-          (b < 0 ? '&#8722;' : '') + peso(Math.abs(b)) + '</span></div>';
+          (b < 0 ? '&#8722;' : '') + peso(Math.abs(b)) +
+          ' <span style="font-size:9px;color:' + (snap ? 'var(--income)' : 'var(--warn)') + '">(' + src + ')</span>' +
+          '</span></div>';
       }).join('') +
+      '</div>' +
+      '<div class="dbgsec"><div class="dbgst">AccountSnapshot Raw Keys</div>' +
+      (Object.keys(p.accountSnap).length === 0 ?
+        '<div class="dbgempty">No AccountSnapshot rows matched this month</div>' :
+        Object.keys(p.accountSnap).map(function(k) {
+          var s = p.accountSnap[k];
+          return '<div class="dbgrow"><span class="dbgk">' + hesc(k) + '</span>' +
+            '<span class="dbgv">' + peso(s.cashEnd) + '</span></div>';
+        }).join('')) +
       '</div>';
       
   } else if (dbgTab === 1) {
@@ -1750,15 +1767,17 @@ function renderDbg() {
     var s2 = p._mAct.slice(0, 6);
     el.innerHTML = '<div class="dbgsec"><div class="dbgst">Activity Column Map</div>' +
       [
-        ['0 (A)', 'Date (used for month filter)'],
-        ['1 (B)', 'Type'],
-        ['2 (C)', 'Amount (neg=expense)'],
-        ['3 (D)', 'Merchant'],
-        ['4 (E)', 'Payment Method'],
-        ['5 (F)', 'Category'],
-        ['6 (G)', 'Group'],
-        ['7 (H)', 'Memo'],
-        ['11 (L)', 'MonthStart label (NOT used for filtering)']
+        ['4 (E)', 'CategoryID (join key)'],
+        ['5 (F)', 'GroupID'],
+        ['6 (G)', 'TransactionDate (display)'],
+        ['7 (H)', 'BillingCycle (month filter)'],
+        ['8 (I)', 'Type'],
+        ['9 (J)', 'Amount'],
+        ['10 (K)', 'Merchant'],
+        ['11 (L)', 'Payment Method'],
+        ['12 (M)', 'Category'],
+        ['13 (N)', 'Group'],
+        ['14 (O)', 'Memo']
       ].map(function(x) {
         return '<div class="dbgrow"><span class="dbgk">Col ' + x[0] + '</span>' +
           '<span class="dbgv">' + x[1] + '</span></div>';
@@ -1766,18 +1785,18 @@ function renderDbg() {
       '</div><div class="dbgsec"><div class="dbgst">First 6 Activity Rows This Month</div>' +
       (s2.length === 0 ? '<div class="dbgempty">No rows - check date parsing</div>' :
         s2.map(function(row, i) {
-          var pd = parseDate(row[0]);
+          var pd = parseDate(row[7]);
           return '<div class="dbgrow" style="flex-direction:column;gap:3px;align-items:flex-start">' +
-            '<span class="dbgk">Row ' + (i + 1) + ': ' + String(row[1] || '?') + 
-            ' &mdash; ' + String(row[3] || '?') + '</span>' +
+            '<span class="dbgk">Row ' + (i + 1) + ': ' + String(row[8] || '?') +
+            ' &mdash; ' + String(row[10] || '?') + '</span>' +
             '<span class="dbgv" style="font-size:9px;text-align:left">' +
-            'Date(0): ' + String(row[0] || '--') + ' &rarr; ' + 
+            'BillingCycle(7): ' + String(row[7] || '--') + ' &rarr; ' +
             (pd ? pd.toLocaleDateString() : 'FAIL') + '<br>' +
-            'Amount(2): ' + String(row[2] || 0) + ' Payment(4): ' + String(row[4] || '--') + '<br>' +
-            'Cat(5): ' + String(row[5] || '--') + ' Group(6): ' + String(row[6] || '--') + '<br>' +
-            'Memo(7): ' + String(row[7] || '--') + '</span></div>';
+            'Amount(9): ' + String(row[9] || 0) + ' Payment(11): ' + String(row[11] || '--') + '<br>' +
+            'Cat(12): ' + String(row[12] || '--') + ' Group(13): ' + String(row[13] || '--') + '<br>' +
+            'Memo(14): ' + String(row[14] || '--') + '</span></div>';
         }).join('') +
-        '<div class="dbgnote">Month filter uses col 0 Date. Memo is col 7 (H).</div>') +
+        '<div class="dbgnote">Month filter uses col 7 BillingCycle. TransactionDate display is col 6.</div>') +
       '</div>';
       
   } else if (dbgTab === 3) {

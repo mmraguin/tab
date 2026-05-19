@@ -100,7 +100,7 @@ catMap[catId] = {           // catId = row[3]
 };
 ```
 
-### Activity Sheet — filter by `row[10]` (BillingCycle, col K)
+### Activity Sheet — filter by `row[7]` (BillingCycle, col H)
 
 | Index | Col | Field | Notes |
 |-------|-----|-------|-------|
@@ -110,26 +110,23 @@ catMap[catId] = {           // catId = row[3]
 | 3 | D | BudgetKey | Ignored |
 | 4 | E | CategoryID | **txnsByCat join key** — matches Budget row[3] |
 | 5 | F | GroupID | Matches Budget row[2] |
-| 6 | G | AccountID | Ignored |
-| 7 | H | AccountFilter | Ignored |
-| 8 | I | TransactionMonthStart | Ignored |
-| 9 | J | TransactionDate | Display date — UTC ISO timestamp |
-| 10 | K | BillingCycle | **Period filter** — UTC ISO timestamp (displayed as MMMM in Sheets) |
-| 11 | L | Type | "Income", "Expense", "Transfer", "Balance", "Reimbursement" |
-| 12 | M | Amount | Transaction amount |
-| 13 | N | Merchant | Merchant/payee name |
-| 14 | O | Payment Method | Account name — must match ACCOUNTS list |
-| 15 | P | Category | Budget category display name |
-| 16 | Q | Group | Category group display name |
-| 17 | R | Memo | Notes |
+| 6 | G | TransactionDate | Display date — UTC ISO timestamp |
+| 7 | H | BillingCycle | **Period filter** — UTC ISO timestamp (displayed as MMMM in Sheets) |
+| 8 | I | Type | "Income", "Expense", "Transfer", "Balance", "Reimbursement" |
+| 9 | J | Amount | Transaction amount |
+| 10 | K | Merchant | Merchant/payee name |
+| 11 | L | Payment Method | Account name — must match ACCOUNTS list |
+| 12 | M | Category | Budget category display name |
+| 13 | N | Group | Category group display name |
+| 14 | O | Memo | Notes |
 
-**Balance rows** (`row[11] === "Balance"`) are account balance snapshots, not transactions. Not month-filtered. Used as fallback for account balances when AccountSnapshot is unavailable.
+**Balance rows** (`row[8] === "Balance"`) are account balance snapshots, not transactions. Not month-filtered. Used as fallback for account balances when AccountSnapshot is unavailable.
 
-### MonthSnapshot Sheet — filter by `row[0]` (BudgetMonth, col A)
+### MonthSnapshot Sheet — filter by `row[0]` (BillingCycle, col A)
 
 | Index | Col | Field | Notes |
 |-------|-----|-------|-------|
-| 0 | A | BudgetMonth | Date filter — UTC ISO timestamp |
+| 0 | A | BillingCycle | Date filter — UTC ISO timestamp |
 | 1 | B | CashStart | Opening net worth |
 | 2 | C | ExternalInflow | Income received |
 | 3 | D | AdjustedIncome | |
@@ -150,11 +147,11 @@ rta        = pn(sr[8]);  // AvailableToAssign — col I
 if (sMonths[i + 1]) prevCashEnd = pn(sMonths[i + 1].row[5]);
 ```
 
-### AccountSnapshot Sheet — filter by `row[0]` (BudgetMonth, col A)
+### AccountSnapshot Sheet — filter by `row[0]` (BillingCycle, col A)
 
 | Index | Col | Field | Notes |
 |-------|-----|-------|-------|
-| 0 | A | BudgetMonth | Date filter — UTC ISO timestamp |
+| 0 | A | BillingCycle | Date filter — UTC ISO timestamp |
 | 1 | B | Payment Method | Account name — must match ACCOUNTS list |
 | 2 | C | TrueBalance | Opening balance |
 | 3 | D | NetCashImpact | Net flow for this account |
