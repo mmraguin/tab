@@ -417,9 +417,7 @@ body::before {
   animation: breathe 2s ease-in-out infinite;
 }
 
-@media (pointer: coarse) {
-  .pdot { animation-duration: 3.5s; }
-}
+.touch .pdot { animation-duration: 4s; }
 
 @keyframes breathe {
   0%, 100% { opacity: 0.3; transform: scale(0.7); }

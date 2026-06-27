@@ -1852,6 +1852,11 @@ if (!loadCache()) {
   loadData();
 }
 
+// Touch detection for animation speed
+if (navigator.maxTouchPoints > 0 || 'ontouchstart' in window) {
+  document.documentElement.classList.add('touch');
+}
+
 // Star field
 (function() {
   var c = document.getElementById('stars');
