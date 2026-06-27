@@ -223,8 +223,8 @@ body::before {
 
 /* Icon buttons (debug, refresh) */
 .hbtn {
-  width: 28px;
-  height: 28px;
+  width: 36px;
+  height: 36px;
   border: none;
   background: none;
   color: var(--text);
@@ -236,10 +236,12 @@ body::before {
   opacity: 0.5;
   transition: opacity 0.2s;
   user-select: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: rgba(255,255,255,0.15);
 }
 
 .hbtn:hover { opacity: 1; }
-.hbtn:active { transform: scale(0.9); }
+.hbtn:active { transform: scale(0.9); opacity: 1; }
 
 .hbtn.on { color: var(--warn); opacity: 1; }
 
@@ -417,7 +419,8 @@ body::before {
   animation: breathe 2s ease-in-out infinite;
 }
 
-.touch .pdot { animation-duration: 4s; }
+@media (pointer: coarse) { .pdot { animation-duration: 8s; } }
+.touch .pdot { animation-duration: 8s; }
 
 @keyframes breathe {
   0%, 100% { opacity: 0.3; transform: scale(0.7); }
