@@ -351,11 +351,18 @@ body::before {
 
 .tlabel {
   font-family: 'Space Mono', monospace;
-  font-size: 8px;
+  font-size: 7px;
   font-weight: 400;
   letter-spacing: 1px;
-  text-transform: uppercase;
+  text-transform: lowercase;
   display: none;
+}
+
+@media (min-width: 600px) {
+  :root { --tab-h: 62px; }
+  .ti { width: 20px; height: 20px; }
+  .tlabel { display: block; font-size: 8px; letter-spacing: 1.5px; }
+  .tab { gap: 4px; }
 }
 
 /* Notification badge on tab icon */
@@ -408,6 +415,10 @@ body::before {
   border-radius: 50%;
   background: var(--accent);
   animation: breathe 2s ease-in-out infinite;
+}
+
+@media (pointer: coarse) {
+  .pdot { animation-duration: 3.5s; }
 }
 
 @keyframes breathe {
