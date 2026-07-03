@@ -1556,17 +1556,18 @@ function renderMore() {
     var totalTarget = cats.reduce(function(s, c) {
       return s + (c.yearlyGoal > 0 ? c.yearlyGoal : c.goal * 12);
     }, 0);
-    var pct    = totalTarget > 0 ? Math.min((totalAvail / totalTarget) * 100, 100) : 0;
-    var pctRnd = Math.round(Math.max(0, pct));
-    var funded = pct >= 100;
-    var cls    = totalAvail < 0 ? 'ec' : funded ? 'ic' : 'nc';
+    var pct     = totalTarget > 0 ? Math.min((totalAvail / totalTarget) * 100, 100) : 0;
+    var pctRnd  = Math.round(Math.max(0, pct));
+    var funded  = pct >= 100;
+    var textCls = totalAvail < 0 ? 'ec' : funded ? 'ic' : 'nc';
+    var fillCls = funded ? 'bf ic' : (totalAvail < 0 ? 'bf ec' : 'bf ac');
     var barHtml = totalTarget > 0
-      ? '<div class="bt" style="margin-top:5px"><div class="bf' + (funded ? ' full' : '') + '" style="width:' + pctRnd + '%"></div></div>'
+      ? '<div class="bt last"><div class="' + fillCls + '" style="width:' + pctRnd + '%"></div></div>'
       : '';
-    return '<div style="display:flex;justify-content:space-between;align-items:baseline;padding:2px 2px 0">' +
+    return '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">' +
       '<div class="lbl" style="padding:0">' + label + '</div>' +
       '<div style="font-family:\'Space Mono\',monospace;font-size:8px;letter-spacing:0.05em">' +
-      '<span class="' + cls + '">' + peso(totalAvail) + '</span>' +
+      '<span class="' + textCls + '">' + peso(totalAvail) + '</span>' +
       (totalTarget > 0 ? '<span style="color:var(--muted)"> / ' + peso(totalTarget) + '</span>' : '') +
       '</div>' +
       '</div>' + barHtml;
@@ -1596,24 +1597,24 @@ function renderMore() {
   var html = '';
 
   if (sinking.length) {
-    html += groupHeader('Sinking Funds', sinking) + '<div class="more">';
+    html += '<div class="goal-group">' + groupHeader('Sinking Funds', sinking) + '<div class="more">';
     sinking.forEach(function(c) { html += goalRow(c, c.cat); });
-    html += '</div>';
+    html += '</div></div>';
   }
 
   if (emergency.length) {
-    html += groupHeader('Emergency', emergency) + '<div class="more">';
+    html += '<div class="goal-group">' + groupHeader('Emergency', emergency) + '<div class="more">';
     emergency.forEach(function(c) {
       var name = c.cat.replace(/\s*fund\s*$/i, '').trim() || c.cat;
       html += goalRow(c, name);
     });
-    html += '</div>';
+    html += '</div></div>';
   }
 
   if (goals.length) {
-    html += groupHeader('Goals', goals) + '<div class="more">';
+    html += '<div class="goal-group">' + groupHeader('Goals', goals) + '<div class="more">';
     goals.forEach(function(c) { html += goalRow(c, c.cat); });
-    html += '</div>';
+    html += '</div></div>';
   }
 
   if (!sinking.length && !emergency.length && !goals.length) {

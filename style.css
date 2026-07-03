@@ -1537,6 +1537,16 @@ body::before {
    MORE TAB
    ══════════════════════════════════════════════════════════════════════════ */
 
+.goal-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.goal-group + .goal-group {
+  margin-top: 32px;
+}
+
 .more {
   background: rgba(26,26,26,0.8);
   backdrop-filter: blur(10px);
