@@ -1551,6 +1551,28 @@ function renderMore() {
   var emergency = p.categories.filter(function(c) { return c.group === 'Emergency'; });
   var goals     = p.categories.filter(function(c) { return c.group === 'Goals'; });
 
+  function groupTotal(cats) {
+    var totalAvail  = cats.reduce(function(s, c) { return s + c.available; }, 0);
+    var totalTarget = cats.reduce(function(s, c) {
+      return s + (c.yearlyGoal > 0 ? c.yearlyGoal : c.goal * 12);
+    }, 0);
+    var pct    = totalTarget > 0 ? Math.min((totalAvail / totalTarget) * 100, 100) : 0;
+    var pctRnd = Math.round(Math.max(0, pct));
+    var funded = pct >= 100;
+    var cls    = totalAvail < 0 ? 'neg' : funded ? 'pos' : 'n';
+    return '<div class="mrow group-total-row" style="flex-direction:column;align-items:stretch;gap:6px;border-top:1px solid var(--border2);margin-top:2px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:baseline">' +
+      '<div class="mrowname" style="color:var(--text2);font-size:10px;letter-spacing:0.04em;text-transform:uppercase">Total</div>' +
+      '<div class="mamount ' + cls + '" style="font-size:12px">' + pctRnd + '%</div>' +
+      '</div>' +
+      '<div class="gbar" style="width:100%;height:4px">' +
+      '<div class="gfill' + (funded ? ' full' : '') + '" style="width:' + pctRnd + '%"></div>' +
+      '</div>' +
+      '<div class="mrowsub">' + peso(totalAvail) +
+      (totalTarget > 0 ? ' of ' + peso(totalTarget) : '') + '</div>' +
+      '</div>';
+  }
+
   function goalRow(c, displayName) {
     var target = c.yearlyGoal > 0 ? c.yearlyGoal : c.goal * 12;
     var pct    = target > 0 ? Math.min((c.available / target) * 100, 100) : 0;
@@ -1577,6 +1599,7 @@ function renderMore() {
   if (sinking.length) {
     html += '<div class="lbl">Sinking Funds</div><div class="more">';
     sinking.forEach(function(c) { html += goalRow(c, c.cat); });
+    if (sinking.length > 1) html += groupTotal(sinking);
     html += '</div>';
   }
 
@@ -1586,12 +1609,14 @@ function renderMore() {
       var name = c.cat.replace(/\s*fund\s*$/i, '').trim() || c.cat;
       html += goalRow(c, name);
     });
+    if (emergency.length > 1) html += groupTotal(emergency);
     html += '</div>';
   }
 
   if (goals.length) {
     html += '<div class="lbl">Goals</div><div class="more">';
     goals.forEach(function(c) { html += goalRow(c, c.cat); });
+    if (goals.length > 1) html += groupTotal(goals);
     html += '</div>';
   }
 
