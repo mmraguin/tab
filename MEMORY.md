@@ -27,3 +27,4 @@
 | Jul 3 2026 | Webhook over direct Sheets API | API key + Sheet ID would both be client-side in a public repo. Personal finance data — not worth the privacy tradeoff. |
 | Jul 3 2026 | No Apps Script warm-up trigger | Probabilistic (doesn't guarantee warmth, can land on different server instance), burns quota, doesn't fix slow reads. |
 | Jul 3 2026 | Accept Apps Script cold start; fix perceived perf with loading states | Cache-first already covers blank-screen problem. Cold start only matters for explicit refresh. |
+| Jul 7 2026 | Replaced `index.html`/`style.css` with the `tabv2` redesign (font stack: Instrument Sans/Inconsolata/Fraunces, replacing Instrument Serif/Space Mono/Manrope) | Redesign was prototyped separately in the sibling `tabv2` directory; once approved, promoted wholesale into `tab` as the new visual system. |
