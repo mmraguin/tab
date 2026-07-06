@@ -14,6 +14,11 @@
 **Match logic:** date + amount fuzzy match against Activity sheet transactions.
 **Lives in:** logger app (has write access), not tab.
 
+### Plan tab progress bar semantics
+**Status:** flagged, not fixed
+**Problem:** category progress bar in Plan tab is ambiguous — unclear whether fill represents % spent or % remaining. Needs to read consistently with Goals tab bars (available / target, fill = progress toward goal, not spend-down).
+**Fix:** audit every progress bar (Plan categories, Goals tab, Home goals strip) and normalize on one fill direction/meaning before shipping.
+
 ---
 
 ## Recent Decisions
