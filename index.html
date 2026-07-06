@@ -26,6 +26,7 @@
   </div>
   
   <div class="pw" id="pw">
+    <div class="ptr" id="ptr"><span class="ptr-icon">&#8635;</span></div>
     <div class="pages" id="pages">
       <!-- Tab 0: Home -->
       <div class="page" id="p0">
@@ -317,34 +318,68 @@ function sHdr(rows) {
    TOUCH HANDLERS
    ══════════════════════════════════════════════════════════════════════════ */
 
-var tx0 = 0, ty0 = 0, pullY = 0, pulling = false;
+var tx0 = 0, ty0 = 0, pullDist = 0, dragging = false, ptrLoading = false;
+var PTR_THRESHOLD = 64;
+var PTR_MAX = 96;
 var pw = document.getElementById('pw');
+var ptrEl = document.getElementById('ptr');
 
 pw.addEventListener('touchstart', function(e) {
   tx0 = e.touches[0].clientX;
   ty0 = e.touches[0].clientY;
-  pullY = e.touches[0].clientY;
+  var page = document.getElementById('p' + curTab);
+  dragging = !ptrLoading && !!page && page.scrollTop === 0;
+  pullDist = 0;
+}, { passive: true });
+
+pw.addEventListener('touchmove', function(e) {
+  if (!dragging) return;
+  var dy = e.touches[0].clientY - ty0;
+  var dx = e.touches[0].clientX - tx0;
+  if (dy <= 0 || Math.abs(dx) > Math.abs(dy)) {
+    dragging = false;
+    resetPtr();
+    return;
+  }
+  pullDist = Math.min(dy * 0.5, PTR_MAX);
+  ptrEl.classList.add('dragging');
+  ptrEl.classList.remove('snapping');
+  ptrEl.style.opacity = Math.min(pullDist / PTR_THRESHOLD, 1);
+  ptrEl.style.transform = 'translateY(' + (pullDist - 56) + 'px) rotate(' + (pullDist * 3) + 'deg)';
 }, { passive: true });
 
 pw.addEventListener('touchend', function(e) {
   var dx = e.changedTouches[0].clientX - tx0;
   var dy = e.changedTouches[0].clientY - ty0;
-  
+
   if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 48) {
     if (dx < 0 && curTab < NUM_PAGES - 1) switchTab(curTab + 1);
     if (dx > 0 && curTab > 0) switchTab(curTab - 1);
   }
-  
-  pulling = false;
+
+  if (dragging && pullDist >= PTR_THRESHOLD) {
+    triggerPtr();
+  } else if (dragging) {
+    resetPtr();
+  }
+  dragging = false;
 }, { passive: true });
 
-pw.addEventListener('touchmove', function(e) {
-  var page = document.getElementById('p' + curTab);
-  if (page && page.scrollTop === 0 && (e.touches[0].clientY - pullY) > 72 && !pulling) {
-    pulling = true;
-    loadData();
-  }
-}, { passive: true });
+function resetPtr() {
+  ptrEl.classList.remove('dragging', 'spinning');
+  ptrEl.classList.add('snapping');
+  ptrEl.style.opacity = '';
+  ptrEl.style.transform = '';
+}
+
+function triggerPtr() {
+  ptrLoading = true;
+  ptrEl.classList.remove('dragging');
+  ptrEl.classList.add('snapping', 'spinning');
+  ptrEl.style.opacity = '1';
+  ptrEl.style.transform = 'translateY(8px)';
+  loadData();
+}
 
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -437,6 +472,10 @@ function loadData() {
     .finally(function() {
       btn.style.opacity = '';
       btn.style.pointerEvents = '';
+      if (ptrLoading) {
+        ptrLoading = false;
+        resetPtr();
+      }
     });
 }
 
@@ -538,12 +577,12 @@ function parseAll() {
     if (sm.d.getMonth() === vm && sm.d.getFullYear() === vy) {
       var sr = sm.row;
       inflowExt  = pn(sr[2]);  // ExternalInflow — col C
-      outflowExt = pn(sr[4]);  // TrueExpense — col E
-      cashEnd    = pn(sr[5]);  // CashEnd — col F
-      atm        = pn(sr[7]);  // AssignedThisMonth — col H
-      rta        = pn(sr[8]);  // AvailableToAssign (hero) — col I
+      outflowExt = pn(sr[5]);  // TrueExpense — col F
+      cashEnd    = pn(sr[6]);  // CashEnd — col G
+      atm        = pn(sr[8]);  // AssignedThisMonth — col I
+      rta        = pn(sr[9]);  // AvailableToAssign (hero) — col J
       // Find previous month
-      if (sMonths[i + 1]) prevCashEnd = pn(sMonths[i + 1].row[5]);
+      if (sMonths[i + 1]) prevCashEnd = pn(sMonths[i + 1].row[6]);
       break;
     }
   }
@@ -681,6 +720,24 @@ function parseAll() {
     });
   }
   
+  // Net worth total — AccountSnapshot col I (date), col J (total) — one row per month
+  var netWorthAS = null, prevNetWorthAS = null;
+  var prevVm = vm === 0 ? 11 : vm - 1;
+  var prevVy = vm === 0 ? vy - 1 : vy;
+  if (rawAS && rawAS.length) {
+    var asData2 = rawAS;
+    if (!parseDate(String(rawAS[0][0] || ''))) asData2 = rawAS.slice(1);
+    asData2.forEach(function(row) {
+      var dTot = parseDate(row[8]);
+      if (!dTot) return;
+      if (dTot.getMonth() === vm && dTot.getFullYear() === vy) {
+        netWorthAS = pn(row[9]);
+      } else if (dTot.getMonth() === prevVm && dTot.getFullYear() === prevVy) {
+        prevNetWorthAS = pn(row[9]);
+      }
+    });
+  }
+
   // Account balances from ALL-TIME Balance rows (fallback / used for txn account detail)
   var accBals = {};
   ACCOUNTS.forEach(function(acc) {
@@ -807,8 +864,8 @@ function parseAll() {
     accBals: accBals,
     accountSnap: accountSnap,
     cashEnd: cashEnd,
-    prevCashEnd: prevCashEnd,
-    netWorth: cashEnd || Object.values(accBals).reduce(function(s, v) { return s + v; }, 0),
+    prevCashEnd: prevNetWorthAS !== null ? prevNetWorthAS : prevCashEnd,
+    netWorth: netWorthAS !== null ? netWorthAS : (cashEnd || Object.values(accBals).reduce(function(s, v) { return s + v; }, 0)),
     txnsByAcc: txnsByAcc,
     allTxns: allTxns,
     top5: top5,
@@ -1689,7 +1746,7 @@ function renderDbg() {
         ['Reimbursed', peso(p.totalReimb), 'Activity Reimbursement txns'],
         ['Net Spend', peso(p.netExp), 'Gross Expense − Reimbursed'],
         ['Total Assigned', peso(p.totalAssignedAll), 'Budget col L (11) sum'],
-        ['Net Worth', peso(p.netWorth), 'Latest Balance rows'],
+        ['Net Worth', peso(p.netWorth), 'AccountSnapshot col J'],
         ['Assigned This Mo', peso(p.assignedThisMonth), 'Snapshot col F']
       ].map(function(x) {
         return '<div class="dbgstat"><div class="dbgslbl">' + x[0] + '</div>' +

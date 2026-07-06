@@ -18,7 +18,6 @@ WEBHOOK = 'https://script.google.com/macros/s/AKfycbxy2zzSSdVP4zoLO8em6hUkAnNran
 
 See MEMORY.md for full context. Current in-flight:
 
-- **Pull to refresh** — not built. Approach agreed: touch events + `overscroll-behavior:contain`, call existing `fetchData()`.
 - **Bank statement reconciliation (Feature 2)** — not built. Scoped: CSV-first (GCash, Maya, UnionBank), PDF harder (UnionBank Credit). Match on date + amount against Activity sheet, write via logger webhook.
 
 ---
@@ -92,9 +91,9 @@ var GORDER = [
 
 | Value | Source | Used in |
 |-------|--------|---------|
-| Left to Assign | MonthSnapshot col I (index 8) | Home hero, Plan hero |
+| Left to Assign | MonthSnapshot col J (index 9) | Home hero, Plan hero |
 | Available | Budget col P (index 15) | Every category card |
-| CashEnd (net worth) | MonthSnapshot col F (index 5) | Accounts tab hero |
+| Net worth | AccountSnapshot col J (index 9), one total row per month matched via col I (index 8) date | Accounts tab hero |
 | Goal target | `yearlyGoal > 0 ? yearlyGoal : goal * 12` | Goals tab, Home strip |
 
 ### Color tokens
@@ -143,19 +142,21 @@ Balance rows (`row[8] === "Balance"`) are snapshots, not transactions — not mo
 | Index | Field | Notes |
 |-------|-------|-------|
 | 2 | ExternalInflow | Income received |
-| 4 | TrueExpense | Monthly outflow |
-| 5 | CashEnd | **Net worth** |
-| 7 | AssignedThisMonth | Total assigned |
-| 8 | AvailableToAssign | **Left to Assign** |
+| 5 | AssignedThisMonth | Total assigned |
+| 6 | TrueExpense | Monthly outflow |
+| 7 | CashEnd | (unused directly — net worth now comes from AccountSnapshot) |
+| 9 | AvailableToAssign | **Left to Assign** |
 
-### AccountSnapshot Sheet (filter by `row[0]` — BillingCycle)
+### AccountSnapshot Sheet (filter by `row[0]` — BillingCycle for per-account rows)
 
 | Index | Field | Notes |
 |-------|-------|-------|
 | 1 | Payment Method | Must match ACCOUNTS |
 | 2 | TrueBalance | Opening balance |
 | 3 | NetCashImpact | Net flow |
-| 4 | Actual Balance | **Closing balance — shown in Accounts tab** |
+| 4 | Actual Balance | Closing balance — shown per-account in Accounts tab |
+| 8 | (date) | Month key for the net worth total row (one row per month) |
+| 9 | Net worth total | **Total net worth — Accounts tab hero** |
 
 ### Debug panel
 

@@ -7,11 +7,6 @@
 
 ## In Flight
 
-### Pull to Refresh
-**Status:** scoped, not built
-**Approach:** `touchstart` / `touchmove` / `touchend` — detect downward swipe from top, show spinner, call existing `fetchData()`. Add `overscroll-behavior: contain` to body to suppress browser's native PTR.
-**Note:** Apps Script cold start (2–5s) means the wait is real — needs a clear loading state so the user knows something is happening.
-
 ### Bank Statement Reconciliation (Feature 2)
 **Status:** scoped, not built — companion to logger
 **Scope:** Upload bank statement → cross-reference against Activity sheet → flag missed / mislogged transactions → allow add / edit / remove → write via logger webhook.
@@ -25,6 +20,7 @@
 
 | Date | Decision | Rationale |
 |------|----------|-----------|
+| Jul 6 2026 | Pull to refresh built: resistance-based drag on `#pw`, `.ptr` indicator (rotates while dragging, spins during fetch), `overscroll-behavior: contain` on `.page` | Matches native PTR feel while suppressing the browser's own bounce/refresh so they don't fight. Threshold 64px, capped drag distance 96px with 0.5x resistance. |
 | Jul 3 2026 | No percentage on group total header | Bar + `₱X / ₱Y` already encodes it. Third encoding adds no information. |
 | Jul 3 2026 | Group total as header (label row), not as a category card at the bottom | Bottom placement was visually ambiguous — looked like another category. Header placement makes ownership clear. |
 | Jul 3 2026 | `.goal-group` wrapper + `32px` gap between groups | Gestalt proximity — tight internal spacing, relaxed between-group spacing. |
