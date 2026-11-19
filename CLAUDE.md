@@ -9,7 +9,7 @@
 Mobile-first personal budget dashboard (Philippines, PHP). Single `index.html` + `style.css`. No framework, no build step. GitHub Pages — push to main, live in ~30 seconds. Read-only: data comes from Google Sheets via Apps Script GET endpoint.
 
 ```
-WEBHOOK = 'https://script.google.com/macros/s/AKfycbxy2zzSSdVP4zoLO8em6hUkAnNran5lq2_U1QIbMgVRutHuVeE_KBRzkRiEbc9X7GeMQA/exec'
+WEBHOOK = 'https://script.google.com/macros/s/AKfycby-_v57oAizOjcb6l8szhOpOi3_jfkZu7_VzvIAdG7Ktk9uVMSg1-r7pEO_O--9tPcgcg/exec'
 ```
 
 ---
