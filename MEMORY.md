@@ -14,12 +14,12 @@
 **Match logic:** date + amount fuzzy match against Activity sheet transactions.
 **Lives in:** logger app (has write access), not tab.
 
-### Plan tab progress bar semantics
-**Status:** flagged, not fixed
-**Problem:** category progress bar in Plan tab is ambiguous — unclear whether fill represents % spent or % remaining. Needs to read consistently with Goals tab bars (available / target, fill = progress toward goal, not spend-down).
-**Fix:** audit every progress bar (Plan categories, Goals tab, Home goals strip) and normalize on one fill direction/meaning before shipping.
-
 ---
+
+### Open items
+- Logger restyle to match tab (next).
+- Logger `TAB_WEBHOOK` still points at an older Apps Script deployment than tab's `WEBHOOK` — confirm which is current.
+- Credit cards: no limit / statement / due-date data in the sheet; Accounts shows "Not tracked yet".
 
 ## Recent Decisions
 
@@ -32,4 +32,5 @@
 | Jul 3 2026 | Webhook over direct Sheets API | API key + Sheet ID would both be client-side in a public repo. Personal finance data — not worth the privacy tradeoff. |
 | Jul 3 2026 | No Apps Script warm-up trigger | Probabilistic (doesn't guarantee warmth, can land on different server instance), burns quota, doesn't fix slow reads. |
 | Jul 3 2026 | Accept Apps Script cold start; fix perceived perf with loading states | Cache-first already covers blank-screen problem. Cold start only matters for explicit refresh. |
+| Nov 20 2026 | Promoted the `tabv3` redesign into `tab`: Inter, dark neutral surfaces with lavender primary and per-group colours; tabs are Home / Accounts / Activity / Budget / Goals / Insights; shared hero → strip → donut pattern; eye hides headline numbers only; global search and a bell with dismissible notifications; PWA manifest + service worker. Previous tab archived in `tabv2`. | Budget bars were ambiguous (spent vs left) — replaced by group rings and a donut, so that item is resolved. Kept the `tab_v1` cache shape because the logger reads it. |
 | Jul 7 2026 | Replaced `index.html`/`style.css` with the `tabv2` redesign (font stack: Instrument Sans/Inconsolata/Fraunces, replacing Instrument Serif/Space Mono/Manrope) | Redesign was prototyped separately in the sibling `tabv2` directory; once approved, promoted wholesale into `tab` as the new visual system. |

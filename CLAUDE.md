@@ -6,7 +6,7 @@
 
 ## What this is
 
-Mobile-first personal budget dashboard (Philippines, PHP). Single `index.html` + `style.css`. No framework, no build step. GitHub Pages — push to main, live in ~30 seconds. Read-only: data comes from Google Sheets via Apps Script GET endpoint.
+Mobile-first personal budget dashboard (Philippines, PHP). Static files: `index.html`, `style.css`, `app.js`, plus PWA files (`manifest.webmanifest`, `sw.js`, icons). No framework, no build step. GitHub Pages — push to main, live in ~30 seconds. Read-only: data comes from Google Sheets via Apps Script GET endpoint.
 
 ```
 WEBHOOK = 'https://script.google.com/macros/s/AKfycbxpw8-x47yAOgE8pez3NU3hPddIXJH4cM3a6Hq9G7vx9Es8CnHDHQOuH4aAyzpxdbWQfw/exec'
@@ -36,18 +36,25 @@ See MEMORY.md for full context. Current in-flight:
 
 **Goals tab**
 - Goal progress = `available / target` where `target = yearlyGoal > 0 ? yearlyGoal : goal * 12`. Never use `totalAssigned` as fallback — causes fake 100% when goal fields are blank.
-- Group sections use `.goal-group` wrapper. `.goal-group + .goal-group` has `margin-top: 32px` for visual separation.
-- `groupHeader(label, cats)` renders the group label + total amounts + progress bar. Bar color: accent while in progress, income (green) when funded, expense (red) if negative.
-- Do not show a percentage on the group total — the bar + amount display is sufficient.
+- Goals are the Budget categories in the Sinking, Emergency and Goals groups. Each is a swipeable card (one at a time); the pills above filter by group and drive the total, breakdown donut and carousel together.
+- The progress chart uses the Budget sheet's own monthly `available` values (history) and projects at the monthly goal, or target ÷ 12 when the monthly goal is blank (labelled as such).
+
+**Shared screen pattern (Home, Accounts, Goals, Budget, Insights)**
+- Hero card (label + eye + big number) → three-number strip → breakdown card. Built with `heroCard()`, `strip()`, `breakdownCard()`.
+- The eye hides only each tab's headline number (`money(n, true)` / `hshort`). Everything else stays visible.
+- Never show cached balances as current: the header sync line shows "Updated", "Saved copy" or "Offline" with the age.
+
+**Category identity**
+- One colour per group (`--c-fixed`, `--c-essentials`, ...) and one icon per category (`CAT_ICON` regex list, falling back to `GROUP_ICON`). Add new category names to `CAT_ICON`.
 
 **Accounts**
 - Account names must exactly match `ACCOUNTS` array and Activity sheet col L / AccountSnapshot col B.
 - `AccountSnapshot` (col E = Actual Balance) is the preferred source. Activity `Balance` rows are fallback only.
 
 **Adding UI sections**
-- New tab content goes in the appropriate `render*()` function.
-- New CSS classes go in `style.css` under the relevant section comment.
-- Match existing token usage: `--income`, `--expense`, `--accent`, `--warn`, `--transfer`.
+- New tab content goes in the appropriate `view*()` function in `app.js`; wire its tab in `index.html` (`.nav-item`) and `TABS`.
+- New CSS classes go in `style.css`. Later blocks (v4–v8) override earlier ones; keep new rules at the end or fold them in.
+- Use the tokens in `:root` (`--primary`, `--success`, `--warning`, `--error`, `--c-*`). Colour is never the only signal — pair it with text or an icon.
 
 ---
 
@@ -57,16 +64,22 @@ See MEMORY.md for full context. Current in-flight:
 Google Sheets (Apps Script)
     │  HTTP GET → JSON { budget, activity, snapshot, accountSnapshot }
     ▼
-parseAll()  →  categories[], allTxns[], accBals{}, readyToAssign, cashEnd, ...
+normalize() → raw {b, a, s, as}   (all months kept)
+parseMonth(raw, month, year) → P  (categories, txns, accBals, netWorth, nwSeries, rta, ...)
     │
-    ├── renderHome()      tab 0 — Left to Assign hero, pace, goals strip, recent txns
-    ├── renderPlan()      tab 1 — all category groups, detail panels, search
-    ├── renderSpend()     tab 2 — transactions, date grouping, category filter
-    ├── renderAccounts()  tab 3 — net worth, per-account balances, account detail
-    └── renderMore()      tab 4 — Goals: Sinking Funds, Emergency, Goals groups
+    ├── viewHome()      hero net worth, strip (Left to assign / Spent / Income), tiles, spending, goals, recent
+    ├── viewAccounts()  pills → hero → strip → donut → net worth line → card carousel → detail + balance history
+    ├── viewActivity()  type chips, date-grouped transactions; memo leads each row
+    ├── viewBudget()    Left to assign hero → strip → "where it's assigned" donut → group cards (tap → sheet)
+    ├── viewGoals()     pills → hero → strip → donut → goal carousel → detail + progress chart
+    └── viewInsights()  period chips → spending hero → strip → category donut (tap to drill) → net worth line
 ```
 
-**Cache:** `localStorage` key `tab_v1` → `{ b, a, s, as, ts }`. Rendered on boot before fetch. Refreshed on every successful fetch. Logger app reads this cache on same origin (`mmraguin.github.io`).
+Top bar: month switcher + freshness line, global search (all months), bell (dismissible notifications), refresh. Floating "Log" button opens the logger. Bottom sheets: transaction, category, group, account, notifications.
+
+**Cache:** `localStorage` key `tab_v1` → `{ b, a, s, as, ts }` (raw sheet arrays). Rendered on boot before fetch, refreshed on every successful fetch. **Do not change this key or shape** — the logger reads it on the same origin (`mmraguin.github.io`). Other keys: `tab_hide` (eye), `tab_dismissed` (notifications).
+
+**PWA:** `sw.js` caches the app shell only (network first). Sheet data is never cached by the service worker. Bump `CACHE` in `sw.js` when adding shell files.
 
 **Companion app:** `mmraguin.github.io/logger/` handles all writes (log transactions, reconcile accounts). Tab is read-only.
 
@@ -91,20 +104,18 @@ var GORDER = [
 
 | Value | Source | Used in |
 |-------|--------|---------|
-| Left to Assign | MonthSnapshot col J (index 9) | Home hero, Plan hero |
+| Left to Assign | MonthSnapshot col J (index 9) | Budget hero, Home strip, notifications |
 | Available | Budget col P (index 15) | Every category card |
-| Net worth | AccountSnapshot col J (index 9), one total row per month matched via col I (index 8) date | Accounts tab hero |
-| Goal target | `yearlyGoal > 0 ? yearlyGoal : goal * 12` | Goals tab, Home strip |
+| Net worth | AccountSnapshot col J (index 9), one total row per month matched via col I (index 8) date | Home + Accounts hero |
+| Goal target | `yearlyGoal > 0 ? yearlyGoal : goal * 12` | Goals tab, Home goals |
 
 ### Color tokens
 
 | Token | Meaning |
 |-------|---------|
-| `--income` | Positive / funded / on track |
-| `--expense` | Negative / overspent / over pace |
-| `--accent` | Brand / active / progress fill |
-| `--warn` | Caution / approaching limit (≥80%) |
-| `--transfer` | Transfer transactions (neutral) |
+| `--primary` | Interactive / active / selected (lavender) |
+| `--success` / `--warning` / `--error` | State colours, always with text or an icon |
+| `--c-fixed`, `--c-essentials`, `--c-pets`, `--c-lifestyle`, `--c-sinking`, `--c-emergency`, `--c-goals` | Category group identity |
 
 ### Budget Sheet (filter by `row[5]` — MonthStart)
 
@@ -130,6 +141,9 @@ var GORDER = [
 | 4 | CategoryID | Join key → Budget row[3] |
 | 6 | TransactionDate | Display date |
 | 7 | BillingCycle | Period filter |
+| 12 | Category | Name (shown as secondary line) |
+| 13 | Group | Drives category colour |
+| 14 | Memo | **Leads each Activity row** |
 | 8 | Type | Income / Expense / Transfer / Balance / Reimbursement / Reconciliation |
 | 9 | Amount | Negative = expense |
 | 10 | Merchant | Payee |
@@ -158,6 +172,6 @@ Balance rows (`row[8] === "Balance"`) are snapshots, not transactions — not mo
 | 8 | (date) | Month key for the net worth total row (one row per month) |
 | 9 | Net worth total | **Total net worth — Accounts tab hero** |
 
-### Debug panel
+### Retired
 
-🔍 button → four sub-tabs: Overview, Budget, Activity, Snapshot. Snapshot tab shows `RTA(J)` per row — use to verify correct column is being read.
+The 🔍 debug panel and the pull-to-refresh gesture were not carried into the redesign. The previous tab (Plan/Spend/More tabs, serif theme) is archived in the sibling `tabv2` folder.
