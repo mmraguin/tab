@@ -577,7 +577,7 @@ function catSheetHtml(catId) {
   var h = (sheetPrev ? '<button class="link-btn" data-back="1">\u2039 Back</button>' : '') + '<div class="txn-hero">' + ktile(iconName(c.cat, c.group), c.group) + '<div class="row-main"><span class="t-card">' + esc(c.cat) + '</span><span class="t-caption">' + esc(c.group) + '</span></div></div>' +
     '<div class="t-display num">' + money(c.available) + '</div><span class="t-label" style="margin-top:-12px">left this month</span>' +
     bar(pct, c.available < 0 ? 'is-over' : (pct >= 80 ? 'is-warn' : '')) +
-    '<section class="panel rows">' + kv('Assigned', peso(c.totalAssigned)) + kv('Spent', peso(c.actAmt)) + kv('Left', signed(c.available)) + '</section>' +
+    '<section class="panel rows">' + kv('Monthly goal', c.goal > 0 ? peso(c.goal) : 'Not set', !(c.goal > 0)) + kv('Assigned', peso(c.totalAssigned)) + kv('Spent', peso(c.actAmt)) + kv('Left', signed(c.available)) + '</section>' +
     '<div class="section"><h3 class="t-card">Spent by month</h3><div class="panel pad">' +
     lineChart({ sheet: true, series: spent, zero: true, area: true, cls: kclass(c.group), label: c.cat + ' spending by month' }) + '</div></div>' +
     '<div class="section"><h3 class="t-card">Transactions</h3>';
@@ -716,7 +716,9 @@ function breakdownCard(title, caption, segs, cv, cl, attr) {
     var tag = attr ? 'button' : 'div';
     lg += '<li><' + tag + ' class="leg"' + (attr ? ' ' + attr + '="' + esc(x.name) + '"' : '') + '><i style="background:' + x.color + '"></i><span>' + esc(x.name) + '</span><b class="num">' + Math.round(x.v / tot * 100) + '%</b></' + tag + '></li>';
   });
-  return h + '<div class="donut-wrap">' + bigDonut(segs, cv, cl, attr) + lg + '</ul></div></div></section>';
+  var long = false;
+  segs.forEach(function(x) { if (String(x.name).length > 13) long = true; });
+  return h + '<div class="donut-wrap' + (long ? ' is-stack' : '') + '">' + bigDonut(segs, cv, cl, attr) + lg + '</ul></div></div></section>';
 }
 
 /* ── Dismissible alerts ────────────────────────────────── */
@@ -759,7 +761,7 @@ function goalsTop() {
   var label = goalFilter === 'all' ? 'Saved across ' + list.length + ' goals' : (list.length ? esc(list[0].group) : '') + ' saved';
   return heroCard(label, money(saved, true), '<div class="hero-note"><span class="num">of ' + peso(target) + ' yearly target \u00b7 ' + pct + '%</span></div>') +
     strip([{ label: 'Target', value: peso(target) }, { label: 'Still needed', value: peso(Math.max(0, target - saved)) }, { label: 'Funded', value: funded + ' of ' + list.length }]) +
-    breakdownCard(goalFilter === 'all' ? 'Where it sits' : 'By goal', '', segs, short(saved), 'saved', null);
+    breakdownCard(goalFilter === 'all' ? 'Where it sits' : 'By goal', 'Tap to open', segs, short(saved), 'saved', 'data-gseg');
 }
 
 
@@ -971,7 +973,7 @@ function viewHome() {
   var cls = budPct > moPct + 10 ? 'is-over' : (budPct > moPct - 5 ? 'is-warn' : '');
   var paceTxt = cls === 'is-over' ? 'Ahead of pace' : (cls === 'is-warn' ? 'Close to pace' : 'On track');
 
-  var h = '<section class="greet"><p class="greet-a">' + greeting() + '</p><h2 class="greet-b">Miles.</h2></section>';
+  var h = '<section class="greet"><div><p class="greet-a">' + greeting() + '</p><h2 class="greet-b">Miles.</h2></div><img class="greet-logo" src="Images/logo.png" alt="tab"></section>';
 
   // Net worth hero, with the headline strip (Left to assign leads)
   var nw = p.netWorth;
@@ -1034,11 +1036,16 @@ function nwRef(p) {
 
 /* ── Accounts ──────────────────────────────────────────── */
 
+var ACC_TONE = {
+  'UnionBank Credit': 'ub-gold', 'UnionBank': 'ub-play', 'BDO': 'bdo', 'BPI': 'bpi', 'Maribank': 'mari',
+  'GCash': 'gcash', 'Maya': 'maya', 'Shopee Pay': 'shopee', 'Grab Wallet': 'grab'
+};
+function accTone(name) { return ACC_TONE[name] || 'plain'; }
+
 function accountList() {
-  var cr = CREDIT_ACCOUNTS.map(function(a) { return { name: a, kind: 'Credit', tone: 'lilac' }; });
-  var tones = ['cobalt', 'lime', 'coral', 'cobalt'];
-  var bk = ACCOUNT_GROUPS[0].items.map(function(a, i) { return { name: a, kind: 'Bank', tone: tones[i % 4] }; });
-  var wl = ACCOUNT_GROUPS[1].items.map(function(a) { return { name: a, kind: 'Wallet', tone: 'dark' }; });
+  var cr = CREDIT_ACCOUNTS.map(function(a) { return { name: a, kind: 'Credit', tone: accTone(a) }; });
+  var bk = ACCOUNT_GROUPS[0].items.map(function(a) { return { name: a, kind: 'Bank', tone: accTone(a) }; });
+  var wl = ACCOUNT_GROUPS[1].items.map(function(a) { return { name: a, kind: 'Wallet', tone: accTone(a) }; });
   if (accFilter === 'credit') return cr;
   if (accFilter === 'banks') return bk;
   if (accFilter === 'wallets') return wl;
@@ -1058,7 +1065,7 @@ function viewAccounts() {
   list.forEach(function(a, i) {
     var bal = p.accBals[a.name] || 0;
     var n = (p.txnsByAcc[a.name] || []).length;
-    h += '<div class="acard tone-' + a.tone + '" data-i="' + i + '">' +
+    h += '<div class="acard acc-' + a.tone + '" data-i="' + i + '">' +
       '<div class="ac-top"><span class="ac-name">' + esc(a.name) + '</span><span class="ac-kind">' + a.kind + '</span></div>' +
       '<div class="ac-bal"><span class="ac-lbl">' + (a.kind === 'Credit' && bal < 0 ? 'Balance owed' : 'Balance') + '</span><span class="ac-amt num">' + money(bal) + '</span></div>' +
       '<div class="ac-foot num">' + n + ' txn' + (n === 1 ? '' : 's') + ' this month</div></div>';
@@ -1083,7 +1090,7 @@ function accDetail(a) {
     h += kv('Source', P.accSource[a.name] === 'balance-row' ? 'Last recorded balance' : 'No balance recorded');
   }
   if (a.kind === 'Credit') h += kv('Limit and due date', 'Not tracked yet', true);
-  var hist = lineChart({ series: accHistory(a.name, 6), area: true, cls: CK[a.tone] || 'ck-dark', label: a.name + ' balance by month' });
+  var hist = lineChart({ series: accHistory(a.name, 6), area: true, cls: 'ck-acc-' + a.tone, label: a.name + ' balance by month' });
   h += '</section><section class="section"><div class="section-head"><h2 class="t-card">Balance history</h2><span class="t-caption">Last 6 months</span></div><div class="panel pad">' +
     (hist || '<p class="t-caption">No month-end balances recorded yet.</p>') + '</div></section>' +
     '<section class="section"><div class="section-head"><h2 class="t-card">Transactions</h2>' +
@@ -1407,6 +1414,19 @@ function viewGoals() {
   return h + '</div><div id="goalDetail">' + goalDetail(list[goalIdx]) + '</div>';
 }
 
+function goalSegTap(name) {
+  if (goalFilter === 'all') {
+    var key = slug(name).replace(/^goal$/, 'goals');
+    goalFilter = key; goalIdx = 0;
+  } else {
+    var list = goalList();
+    for (var i = 0; i < list.length; i++) if (list[i].name === name) goalIdx = i;
+  }
+  paint();
+  var el = document.getElementById('gcards');
+  if (el && el.firstElementChild) el.scrollLeft = goalIdx * (el.firstElementChild.offsetWidth + 12);
+}
+
 function goalDetail(g) {
   if (!g) return '';
   var left = Math.max(0, g.target - g.available);
@@ -1508,8 +1528,12 @@ function closeSheet() {
 
 var TABS = ['home', 'accounts', 'activity', 'budget', 'goals', 'insights'];
 
-function setTab(t) {
+var tabHist = [];
+
+function setTab(t, back) {
+  if (t === tab) return;
   var dir = TABS.indexOf(t) - TABS.indexOf(tab);
+  if (!back) { tabHist.push(tab); if (tabHist.length > 20) tabHist.shift(); }
   tab = t; paint(); window.scrollTo(0, 0);
   var v = document.getElementById('view');
   v.classList.remove('enter-l', 'enter-r');
@@ -1581,7 +1605,7 @@ function init() {
 
   // Taps: charts, donut, rows that open sheets, home tiles
   document.addEventListener('click', function(e) {
-    var n = e.target.closest ? e.target.closest('[data-read],[data-seg],[data-cat],[data-grp],[data-txn],[data-back],[data-goacc],[data-eye],[data-dismiss],[data-undo],[data-sr],[data-restore],#sheet [data-go]') : null;
+    var n = e.target.closest ? e.target.closest('[data-read],[data-gseg],[data-seg],[data-cat],[data-grp],[data-txn],[data-back],[data-goacc],[data-eye],[data-dismiss],[data-undo],[data-sr],[data-restore],#sheet [data-go]') : null;
     if (!n) return;
     if (n.hasAttribute('data-read')) {
       var box = n.closest('.chart-box');
@@ -1593,6 +1617,7 @@ function init() {
       }
       return;
     }
+    if (n.hasAttribute('data-gseg')) { goalSegTap(n.getAttribute('data-gseg')); return; }
     if (n.hasAttribute('data-seg')) { var v = n.getAttribute('data-seg'); insSel = insSel === v ? null : v; paint(); return; }
     if (n.hasAttribute('data-cat')) { openCat(n.getAttribute('data-cat')); return; }
     if (n.hasAttribute('data-grp')) { openGrp(n.getAttribute('data-grp')); return; }
@@ -1624,12 +1649,48 @@ function init() {
   var sx = 0, sy = 0, st = 0;
   view.addEventListener('touchstart', function(e) { sx = e.touches[0].clientX; sy = e.touches[0].clientY; st = Date.now(); }, { passive: true });
   view.addEventListener('touchend', function(e) {
+    if (!document.getElementById('sheet').hidden) return;
     if (e.target.closest && e.target.closest('.cards,.chips,.chart-box,input')) return;
     var dx = e.changedTouches[0].clientX - sx, dy = e.changedTouches[0].clientY - sy;
-    if (Math.abs(dx) < 70 || Math.abs(dy) > 40 || Date.now() - st > 600) return;
-    var i = TABS.indexOf(tab) + (dx < 0 ? 1 : -1);
-    if (i >= 0 && i < TABS.length) setTab(TABS[i]);
+    if (Math.abs(dx) < 60 || Math.abs(dy) > Math.abs(dx) * 0.5 || Date.now() - st > 700) return;
+    if (dx > 0) {
+      // Swipe right: back to the tab you came from
+      if (tabHist.length) setTab(tabHist.pop(), true);
+      else if (TABS.indexOf(tab) > 0) setTab(TABS[TABS.indexOf(tab) - 1], true);
+      return;
+    }
+    var i = TABS.indexOf(tab) + 1;
+    if (i < TABS.length) setTab(TABS[i]);
   }, { passive: true });
+
+  // Drag the bottom sheet down to close it
+  var sheetEl = document.getElementById('sheet'), sbody = document.getElementById('sheetBody');
+  var dy0 = 0, dy = 0, dragging = false;
+  sheetEl.addEventListener('touchstart', function(e) {
+    if (e.touches.length !== 1) return;
+    var onBody = sbody.contains(e.target);
+    if (onBody && sbody.scrollTop > 0) { dragging = false; return; }
+    if (e.target.closest && e.target.closest('.chart-box')) { dragging = false; return; }
+    dy0 = e.touches[0].clientY; dy = 0; dragging = true;
+    sheetEl.style.transition = 'none';
+  }, { passive: true });
+  sheetEl.addEventListener('touchmove', function(e) {
+    if (!dragging) return;
+    dy = e.touches[0].clientY - dy0;
+    if (dy < 0) { dy = 0; }
+    if (dy > 0 && sbody.scrollTop > 0) return;
+    sheetEl.style.transform = 'translateY(' + dy + 'px)';
+  }, { passive: true });
+  function endDrag() {
+    if (!dragging) return;
+    dragging = false;
+    sheetEl.style.transition = '';
+    if (dy > 90) { sheetEl.style.transform = ''; closeSheet(); }
+    else sheetEl.style.transform = '';
+    dy = 0;
+  }
+  sheetEl.addEventListener('touchend', endDrag, { passive: true });
+  sheetEl.addEventListener('touchcancel', endDrag, { passive: true });
 
   var hh = (location.hash || '').replace('#', '');
   if (/^(home|accounts|activity|budget|goals|insights)$/.test(hh)) tab = hh;

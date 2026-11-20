@@ -48,6 +48,7 @@ See MEMORY.md for full context. Current in-flight:
 - One colour per group (`--c-fixed`, `--c-essentials`, ...) and one icon per category (`CAT_ICON` regex list, falling back to `GROUP_ICON`). Add new category names to `CAT_ICON`.
 
 **Accounts**
+- Each account card uses its own 125° brand-inspired gradient (`ACC_TONE` in `app.js`, `.acc-*` in `style.css`); dark text on UnionBank Gold/PlayEveryday, Maribank, Maya, Shopee; white on BDO, BPI, GCash, Grab. Cash has no gradient. Keep these in sync anywhere an account card appears.
 - Account names must exactly match `ACCOUNTS` array and Activity sheet col L / AccountSnapshot col B.
 - `AccountSnapshot` (col E = Actual Balance) is the preferred source. Activity `Balance` rows are fallback only.
 
