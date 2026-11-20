@@ -17,20 +17,14 @@
 ---
 
 ### Open items
-- Logger restyle to match tab (next).
-- Logger `TAB_WEBHOOK` still points at an older Apps Script deployment than tab's `WEBHOOK` — confirm which is current.
 - Credit cards: no limit / statement / due-date data in the sheet; Accounts shows "Not tracked yet".
+
+### Webhooks (intentionally different)
+- Tab `WEBHOOK` (read, GET) and logger `WEBHOOK` (write, POST) are **different** Apps Script deployments. The logger also has `TAB_WEBHOOK` for reads. Do not "fix" one to match the other. Full URLs are in each repo's CLAUDE.md.
 
 ## Recent Decisions
 
 | Date | Decision | Rationale |
 |------|----------|-----------|
-| Jul 6 2026 | Pull to refresh built: resistance-based drag on `#pw`, `.ptr` indicator (rotates while dragging, spins during fetch), `overscroll-behavior: contain` on `.page` | Matches native PTR feel while suppressing the browser's own bounce/refresh so they don't fight. Threshold 64px, capped drag distance 96px with 0.5x resistance. |
-| Jul 3 2026 | No percentage on group total header | Bar + `₱X / ₱Y` already encodes it. Third encoding adds no information. |
-| Jul 3 2026 | Group total as header (label row), not as a category card at the bottom | Bottom placement was visually ambiguous — looked like another category. Header placement makes ownership clear. |
-| Jul 3 2026 | `.goal-group` wrapper + `32px` gap between groups | Gestalt proximity — tight internal spacing, relaxed between-group spacing. |
-| Jul 3 2026 | Webhook over direct Sheets API | API key + Sheet ID would both be client-side in a public repo. Personal finance data — not worth the privacy tradeoff. |
-| Jul 3 2026 | No Apps Script warm-up trigger | Probabilistic (doesn't guarantee warmth, can land on different server instance), burns quota, doesn't fix slow reads. |
-| Jul 3 2026 | Accept Apps Script cold start; fix perceived perf with loading states | Cache-first already covers blank-screen problem. Cold start only matters for explicit refresh. |
 | Nov 20 2026 | Promoted the `tabv3` redesign into `tab`: Inter, dark neutral surfaces with lavender primary and per-group colours; tabs are Home / Accounts / Activity / Budget / Goals / Insights; shared hero → strip → donut pattern; eye hides headline numbers only; global search and a bell with dismissible notifications; PWA manifest + service worker. Previous tab archived in `tabv2`. | Budget bars were ambiguous (spent vs left) — replaced by group rings and a donut, so that item is resolved. Kept the `tab_v1` cache shape because the logger reads it. |
-| Jul 7 2026 | Replaced `index.html`/`style.css` with the `tabv2` redesign (font stack: Instrument Sans/Inconsolata/Fraunces, replacing Instrument Serif/Space Mono/Manrope) | Redesign was prototyped separately in the sibling `tabv2` directory; once approved, promoted wholesale into `tab` as the new visual system. |
+| Nov 20 2026 | One brand icon: `Images/favicon.png` is the favicon, apple-touch-icon and manifest icon in both repos; `Images/logo.png` is the wordmark. Old `icon-*.png`, `apple-touch-icon.png`, `tab-mark.png` removed. | Single source for brand images. Logger carries its own copy of `Images/`. |

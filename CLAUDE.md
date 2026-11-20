@@ -6,11 +6,30 @@
 
 ## What this is
 
-Mobile-first personal budget dashboard (Philippines, PHP). Static files: `index.html`, `style.css`, `app.js`, plus PWA files (`manifest.webmanifest`, `sw.js`, icons). No framework, no build step. GitHub Pages — push to main, live in ~30 seconds. Read-only: data comes from Google Sheets via Apps Script GET endpoint.
+Mobile-first personal budget dashboard (Philippines, PHP). Static files: `index.html`, `style.css`, `scripts/app.js`, plus PWA files (`manifest.webmanifest`, `sw.js`) and `Images/` (`favicon.png` = favicon, apple-touch-icon and manifest icon; `logo.png` = wordmark). No framework, no build step. GitHub Pages — push to main, live in ~30 seconds. Read-only: data comes from Google Sheets via Apps Script GET endpoint.
 
 ```
 WEBHOOK = 'https://script.google.com/macros/s/AKfycbxpw8-x47yAOgE8pez3NU3hPddIXJH4cM3a6Hq9G7vx9Es8CnHDHQOuH4aAyzpxdbWQfw/exec'
 ```
+
+**Tab and logger use different webhooks on purpose.** The logger's write `WEBHOOK` (`...AKfycbwfl8...`) and its `TAB_WEBHOOK` (`...AKfycbxy2z...`) are separate deployments from the one above. Never copy one into another repo.
+
+---
+
+## Files and scripts (what each one does)
+
+| File | What it does |
+|------|--------------|
+| `index.html` | Page shell: top bar, six tab pages, bottom nav, bottom sheets. Loads `style.css` and `scripts/app.js`. |
+| `style.css` | All styling and colour tokens. |
+| `scripts/app.js` | The whole app: fetches the sheet via `WEBHOOK`, parses it, caches it (`tab_v1`), and draws every tab, chart, search and notification. Also registers the service worker. |
+| `sw.js` | Service worker. Caches the app shell so tab opens offline. Never caches sheet data. Must stay in the repo root (a service worker can only control its own folder and below). Bump `CACHE` when shell files change. |
+| `manifest.webmanifest` | Makes tab installable on a phone: name, colours, icon. |
+| `Images/favicon.png` | Brand icon: favicon, apple-touch-icon and install icon. |
+| `Images/logo.png` | Wordmark in the nav and Home greeting. |
+| `.gitignore` | Ignores `.DS_Store`. |
+| `ROADMAP.md` | Open work only. |
+| `MEMORY.md` / `MEMORY-ARCHIVE.md` | Active decisions / resolved history. |
 
 ---
 
@@ -48,12 +67,12 @@ See MEMORY.md for full context. Current in-flight:
 - One colour per group (`--c-fixed`, `--c-essentials`, ...) and one icon per category (`CAT_ICON` regex list, falling back to `GROUP_ICON`). Add new category names to `CAT_ICON`.
 
 **Accounts**
-- Each account card uses its own 125° brand-inspired gradient (`ACC_TONE` in `app.js`, `.acc-*` in `style.css`); dark text on UnionBank Gold/PlayEveryday, Maribank, Maya, Shopee; white on BDO, BPI, GCash, Grab. Cash has no gradient. Keep these in sync anywhere an account card appears.
+- Each account card uses its own 125° brand-inspired gradient (`ACC_TONE` in `scripts/app.js`, `.acc-*` in `style.css`); dark text on UnionBank Gold/PlayEveryday, Maribank, Maya, Shopee; white on BDO, BPI, GCash, Grab. Cash has no gradient. Keep these in sync anywhere an account card appears.
 - Account names must exactly match `ACCOUNTS` array and Activity sheet col L / AccountSnapshot col B.
 - `AccountSnapshot` (col E = Actual Balance) is the preferred source. Activity `Balance` rows are fallback only.
 
 **Adding UI sections**
-- New tab content goes in the appropriate `view*()` function in `app.js`; wire its tab in `index.html` (`.nav-item`) and `TABS`.
+- New tab content goes in the appropriate `view*()` function in `scripts/app.js`; wire its tab in `index.html` (`.nav-item`) and `TABS`.
 - New CSS classes go in `style.css`. Later blocks (v4–v8) override earlier ones; keep new rules at the end or fold them in.
 - Use the tokens in `:root` (`--primary`, `--success`, `--warning`, `--error`, `--c-*`). Colour is never the only signal — pair it with text or an icon.
 
