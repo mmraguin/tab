@@ -25,7 +25,8 @@ WEBHOOK = 'https://script.google.com/macros/s/AKfycbxpw8-x47yAOgE8pez3NU3hPddIXJ
 | `scripts/app.js` | The whole app: fetches the sheet via `WEBHOOK`, parses it, caches it (`tab_v1`), and draws every tab, chart, search and notification. Also registers the service worker. |
 | `sw.js` | Service worker. Caches the app shell so tab opens offline. Never caches sheet data. Must stay in the repo root (a service worker can only control its own folder and below). Bump `CACHE` when shell files change. |
 | `manifest.webmanifest` | Makes tab installable on a phone: name, colours, icon. |
-| `Images/favicon.png` | Brand icon: favicon, apple-touch-icon and install icon. |
+| `Images/favicon.png` | Browser-tab favicon. |
+| `Images/app.png` | App icon: the home-screen / install icon (manifest and apple-touch-icon). |
 | `Images/logo.png` | Wordmark in the nav and Home greeting. |
 | `.gitignore` | Ignores `.DS_Store`. |
 | `ROADMAP.md` | Open work only. |

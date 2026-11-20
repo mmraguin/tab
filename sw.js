@@ -1,7 +1,7 @@
 /* App-shell cache only. Financial data is never cached here: the sheet request
    goes straight to the network, and the app keeps its own dated copy. */
-var CACHE = 'tab-shell-v3';
-var SHELL = ['./', 'index.html', 'style.css', 'scripts/app.js', 'manifest.webmanifest', 'Images/favicon.png', 'Images/logo.png'];
+var CACHE = 'tab-shell-v4';
+var SHELL = ['./', 'index.html', 'style.css', 'scripts/app.js', 'manifest.webmanifest', 'Images/favicon.png', 'Images/app.png', 'Images/logo.png'];
 
 self.addEventListener('install', function(e) {
   e.waitUntil(caches.open(CACHE).then(function(c) { return c.addAll(SHELL); }));
