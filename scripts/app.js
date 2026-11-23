@@ -278,6 +278,8 @@ var ICON = {
   ok: '<svg class="state-ico state-ok" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l3 3 5-6"/></svg>',
   warn: '<svg class="state-ico state-warn" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17v.01"/></svg>',
   err: '<svg class="state-ico state-err" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16v.01"/></svg>',
+  prev: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>',
+  next: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>',
   chev: '<svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>',
   search: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>'
 };
@@ -1052,6 +1054,12 @@ function accountList() {
   return cr.concat(bk, wl);
 }
 
+// Prev / next buttons for the card carousels (shown only with a mouse; touch swipes)
+function carNav(id) {
+  return '<div class="car-nav"><button class="icon-btn" data-car="-1" data-for="' + id + '" aria-label="Previous card">' + ICON.prev + '</button>' +
+    '<button class="icon-btn" data-car="1" data-for="' + id + '" aria-label="Next card">' + ICON.next + '</button></div>';
+}
+
 function viewAccounts() {
   var p = P;
   var list = accountList();
@@ -1061,7 +1069,7 @@ function viewAccounts() {
   [['all', 'All'], ['credit', 'Credit'], ['banks', 'Banks'], ['wallets', 'Wallets']].forEach(function(f) {
     h += '<button class="chip" data-accf="' + f[0] + '" aria-pressed="' + (accFilter === f[0]) + '">' + f[1] + '</button>';
   });
-  h += '</div>' + accountsTop(p) + '<div class="cards" id="cards" tabindex="0" aria-label="Accounts">';
+  h += '</div>' + accountsTop(p) + carNav('cards') + '<div class="cards" id="cards" tabindex="0" aria-label="Accounts">';
   list.forEach(function(a, i) {
     var bal = p.accBals[a.name] || 0;
     var n = (p.txnsByAcc[a.name] || []).length;
@@ -1400,7 +1408,7 @@ function viewGoals() {
   [['all', 'All'], ['sinking', 'Sinking'], ['emergency', 'Emergency'], ['goals', 'Goals']].forEach(function(f) {
     h += '<button class="chip" data-goalf="' + f[0] + '" aria-pressed="' + (goalFilter === f[0]) + '">' + f[1] + '</button>';
   });
-  h += '</div>' + goalsTop() + '<div class="cards" id="gcards" tabindex="0" aria-label="Goals">';
+  h += '</div>' + goalsTop() + carNav('gcards') + '<div class="cards" id="gcards" tabindex="0" aria-label="Goals">';
   list.forEach(function(g, i) {
     var done = g.pct >= 100;
     h += '<div class="gcard ' + kclass(g.group) + '" data-i="' + i + '">' +
@@ -1605,7 +1613,7 @@ function init() {
 
   // Taps: charts, donut, rows that open sheets, home tiles
   document.addEventListener('click', function(e) {
-    var n = e.target.closest ? e.target.closest('[data-read],[data-gseg],[data-seg],[data-cat],[data-grp],[data-txn],[data-back],[data-goacc],[data-eye],[data-dismiss],[data-undo],[data-sr],[data-restore],#sheet [data-go]') : null;
+    var n = e.target.closest ? e.target.closest('[data-read],[data-gseg],[data-seg],[data-cat],[data-grp],[data-txn],[data-back],[data-goacc],[data-eye],[data-car],[data-dismiss],[data-undo],[data-sr],[data-restore],#sheet [data-go]') : null;
     if (!n) return;
     if (n.hasAttribute('data-read')) {
       var box = n.closest('.chart-box');
@@ -1623,6 +1631,15 @@ function init() {
     if (n.hasAttribute('data-grp')) { openGrp(n.getAttribute('data-grp')); return; }
     if (n.hasAttribute('data-txn')) { openTxn(+n.getAttribute('data-txn')); return; }
     if (n.hasAttribute('data-back') && sheetPrev) { var p = sheetPrev; openSheet(p.title, p.html, false); return; }
+    if (n.hasAttribute('data-car')) {
+      var cel = document.getElementById(n.getAttribute('data-for'));
+      if (cel && cel.firstElementChild) {
+        var step = cel.firstElementChild.offsetWidth + 12;
+        var cur = Math.round(cel.scrollLeft / step) + (+n.getAttribute('data-car'));
+        cel.scrollTo({ left: Math.max(0, cur) * step, behavior: 'smooth' });
+      }
+      return;
+    }
     if (n.hasAttribute('data-eye')) {
       hideNums = !hideNums;
       try { localStorage.setItem('tab_hide', hideNums ? '1' : '0'); } catch (err) {}

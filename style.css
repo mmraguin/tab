@@ -245,6 +245,7 @@ button.card:active { transform: scale(.99); }
 .skel-block { height: 120px; border-radius: var(--r-md); }
 
 /* Bottom sheet */
+.sheet[hidden], .scrim[hidden] { display: none; }
 .scrim { position: fixed; inset: 0; background: rgba(5,6,8,.64); z-index: 20; opacity: 0; transition: opacity .2s; }
 .scrim.is-open { opacity: 1; }
 .sheet {
@@ -260,6 +261,7 @@ button.card:active { transform: scale(.99); }
 .sheet-head { display: flex; align-items: center; justify-content: space-between; padding: 8px 8px 8px 16px; }
 .sheet-head h2 { font-size: 16px; font-weight: 600; }
 .sheet-body { overflow-y: auto; padding: 0 16px 24px; display: flex; flex-direction: column; gap: 16px; overscroll-behavior: contain; }
+@media (min-width: 640px) { .sheet:not(.is-open) { transform: translateY(calc(100% + 10vh)); } }
 @media (min-width: 900px) {
   .sheet { left: 50%; right: auto; width: 480px; margin-left: -240px; bottom: 5vh; border: 1px solid var(--border); border-radius: 16px; max-height: 80vh; }
 }
@@ -838,3 +840,57 @@ html[data-theme="playful"] .pair .t-display { font-size: 26px; line-height: 32px
 .donut-wrap.is-stack { flex-direction: column; align-items: stretch; gap: 16px; }
 .donut-wrap.is-stack .donut { align-self: center; }
 .donut-wrap.is-stack .legend { flex: none; width: 100%; }
+
+/* ═══ v9 — adaptive layout: phone, tablet, desktop ═══════════
+   Phone  (<640)   bottom nav, one column (the base styles above)
+   Tablet (640+)   bottom nav, wider column, roomier grids
+   Desktop (900+)  side rail; 1100+ adds a second column of sections
+   Carousels stay swipeable everywhere; cards keep a fixed width. */
+
+/* Card carousels: a fixed card width, so wide screens show the next card peeking */
+.acard, .gcard { width: min(100%, 380px); }
+.car-nav { display: none; }
+
+@media (min-width: 640px) {
+  .main { max-width: 920px; }
+  .top { padding-left: 24px; padding-right: 24px; }
+  .view { padding: 12px 24px 0; gap: 32px; }
+  .bgrid { grid-template-columns: repeat(3, 1fr); }
+  .donut-wrap .donut { width: 200px; height: 200px; }
+  .sheet { left: 50%; right: auto; width: 520px; margin-left: -260px; bottom: 5vh; border: 1px solid var(--border); border-radius: 16px; max-height: 80vh; }
+  .tiles { gap: 12px; }
+}
+
+@media (min-width: 900px) {
+  .main { padding-bottom: 48px; }
+  .top, .view { max-width: 1040px; }
+  .top { padding-left: 40px; padding-right: 40px; }
+  .view { padding: 16px 40px 0; }
+  .bgrid { grid-template-columns: repeat(4, 1fr); }
+  .sheet { width: 520px; margin-left: -260px; }
+  .toast { bottom: 96px; }
+}
+
+/* Wide desktop: sections sit two across, headline pieces stay full width */
+@media (min-width: 1100px) {
+  .main { margin-left: 220px; }
+  .nav { width: 220px; }
+  .top, .view { max-width: 1120px; }
+  .view { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px 32px; align-items: start; }
+  .view > * { grid-column: 1 / -1; min-width: 0; }
+  .view > .section, .view > .card-btn { grid-column: auto; }
+  .view > .section:has(.bgrid) { grid-column: 1 / -1; }
+}
+
+/* Mouse and trackpad: prev / next arrows for the carousels (touch just swipes) */
+@media (hover: hover) and (pointer: fine) {
+  .car-nav { display: flex; justify-content: flex-end; gap: 4px; margin-bottom: -24px; }
+  .car-nav .icon-btn { width: 32px; height: 32px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; }
+  .car-nav .icon-btn svg { width: 16px; height: 16px; }
+}
+
+/* Short landscape phones: keep the bottom nav compact */
+@media (max-height: 480px) and (orientation: landscape) {
+  :root { --nav-h: 52px; }
+  .nav-item span { display: none; }
+}
