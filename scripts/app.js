@@ -975,7 +975,7 @@ function viewHome() {
   var cls = budPct > moPct + 10 ? 'is-over' : (budPct > moPct - 5 ? 'is-warn' : '');
   var paceTxt = cls === 'is-over' ? 'Ahead of pace' : (cls === 'is-warn' ? 'Close to pace' : 'On track');
 
-  var h = '<section class="greet"><div><p class="greet-a">' + greeting() + '</p><h2 class="greet-b">Miles.</h2></div><img class="greet-logo" src="Images/logo.png" alt="tab"></section>';
+  var h = '<section class="greet"><div><p class="greet-a">' + greeting() + '</p><h2 class="greet-b">Miles.</h2></div></section>';
 
   // Net worth hero, with the headline strip (Left to assign leads)
   var nw = p.netWorth;

@@ -831,7 +831,6 @@ html[data-theme="playful"] .pair .t-display { font-size: 26px; line-height: 32px
 .foot { padding: 24px 16px 0; }
 .foot .sync { text-align: center; font-size: 10px; line-height: 14px; padding: 0; white-space: normal; }
 .greet { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
-.greet-logo { height: 26px; width: auto; flex: none; opacity: .95; }
 .nav-brand img { height: 28px; width: auto; display: block; }
 @media (min-width: 900px) { .foot { max-width: 760px; margin: 0 auto; padding: 24px 32px 0; } }
 .donut-wrap .donut { flex: none; }
